@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام إدارة المشتريات</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#4F46E5">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#F4F6FF;--ind:#4F46E5;--ind2:#4338CA;--teal:#10B981;--org:#F59E0B;--red:#EF4444;--txt:#1E1B4B;--mut:#6B7280;--line:#E0E7FF}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+header{background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;padding:18px 28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;box-shadow:0 4px 18px #4f46e555}
+header h1{font-size:24px;flex:1;white-space:nowrap}
+.stats{display:flex;gap:10px}.stat{background:#ffffff26;padding:6px 14px;border-radius:20px;font-size:14px}
+main{max-width:1200px;margin:22px auto;padding:0 18px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{flex:1;padding:13px;border:0;border-radius:12px;background:#E0E7FF;color:var(--ind);font:700 16px inherit;font-family:inherit;cursor:pointer;transition:.2s}
+.tab.on{background:var(--ind);color:#fff;box-shadow:0 6px 16px #4f46e540}
+.pane{display:none}.pane.on{display:block}
+.card{background:#fff;border-radius:16px;padding:20px 22px;margin-bottom:18px;box-shadow:0 2px 14px #4f46e51a;border-top:5px solid var(--ind)}
+.card.g{border-top-color:var(--teal)}
+.card h2{font-size:18px;margin-bottom:14px;color:var(--ind)}.card.g h2{color:var(--teal)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.s2{grid-column:span 2}.s4{grid-column:span 4}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:5px}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:10px;font:15px inherit;font-family:inherit;color:var(--txt);background:#fff;outline:0;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--ind);box-shadow:0 0 0 3px #4f46e528}
+input[readonly]{background:#EEF2FF;font-weight:700}
+.bar{display:flex;gap:10px;justify-content:flex-start;margin-top:16px;flex-wrap:wrap}
+.btn{border:0;color:#fff;padding:11px 22px;border-radius:10px;font:700 15px inherit;font-family:inherit;cursor:pointer;transition:.15s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.b-ind{background:var(--ind)}.b-teal{background:var(--teal)}.b-org{background:var(--org)}.b-red{background:var(--red)}
+.tw{background:#fff;border-radius:16px;overflow:auto;box-shadow:0 2px 14px #4f46e51a}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--ind);color:#fff;padding:12px 10px;position:sticky;top:0}
+td{padding:11px 10px;text-align:center;border-bottom:1px solid var(--line)}
+tr:nth-child(even) td{background:#F5F3FF}tr:hover td{background:#E0E7FF!important}
+.done td{color:var(--teal);font-weight:700}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+.x{background:var(--red);color:#fff;border:0;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit}
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);padding:13px 26px;border-radius:12px;color:#fff;font-weight:700;transition:.3s;z-index:9}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.stat:empty{display:none}
+dialog{border:0;border-radius:16px;padding:24px;width:min(480px,92vw);box-shadow:0 20px 60px #0006}
+dialog::backdrop{background:#1e1b4b88}
+dialog h2{color:var(--ind);margin-bottom:6px}dialog p{font-size:13px;color:var(--mut);line-height:1.8;margin-bottom:12px}
+dialog label{margin-top:10px}
+.res{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.res span{background:#FEF3C7;color:#92400E;padding:10px 18px;border-radius:12px;font-size:15px}.res b{font-size:19px}
+.top .tab{font-size:18px;padding:16px;background:#fff;color:var(--ind);box-shadow:0 2px 10px #4f46e51a}
+.top .tab.on{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff}
+dialog.big{width:min(860px,95vw);max-height:92vh;overflow:auto}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border:1.5px solid #D1D5DB;border-radius:10px;cursor:pointer;font-size:14px;color:var(--txt);margin:0 0 0 8px;user-select:none}
+.chip input{width:auto;margin:0}
+.chip:has(input:checked){background:#EEF2FF;border-color:var(--ind);font-weight:700}
+.qbox{border:2px dashed var(--org);background:#FFFBEB;border-radius:14px;padding:16px;margin-top:16px}
+.qbox h3{color:#B45309;margin-bottom:10px;font-size:16px}
+.lines{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.lines .chip{padding:16px;font-size:16px;justify-content:flex-start;margin:0}
+textarea{resize:vertical;min-height:60px}
+.xchk{margin:0;cursor:pointer;display:inline-block}
+.xchk input{display:none}
+.xchk span{display:inline-flex;width:28px;height:28px;border:2px solid #CBD5E1;border-radius:7px;align-items:center;justify-content:center;color:transparent;font-size:15px;font-weight:700;background:#fff;transition:.15s}
+.xchk input:checked+span{background:#EF4444;border-color:#EF4444;color:#fff}
+tr.skipped td{background:#FEE2E2!important;color:#B91C1C;text-decoration:line-through}
+tr.skipped td:first-child{text-decoration:none}
+tr.low td{background:#FEF3C7!important}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.s4{grid-column:span 2}}
+</style>
+</head>
+<body>
+<header>
+  <h1>مؤسسة ظهير الفيصل للمنتجات الصحية</h1>
+  <div class="stats"><span class="stat" id="st1"></span><span class="stat" id="st2"></span><span class="stat" id="cloud"></span></div>
+  <input type="file" id="imp" accept=".xlsx" hidden onchange="importXlsx(this)">
+  <button class="btn b-teal" onclick="$('imp').click()">📥 استيراد من Excel</button>
+  <button class="btn b-ind" style="background:#7C3AED" onclick="openSync()">🔄 المزامنة مع الجوال</button>
+  <button class="btn b-org" onclick="exportXlsx('all')">📊 تصدير الكل إلى Excel</button>
+</header>
+<main>
+<div class="tabs top">
+  <button class="tab on" data-p="m1">🛒 إدارة المشتريات</button>
+  <button class="tab" data-p="m2">🏭 مواد أولية</button>
+  <button class="tab" data-p="m3">🏬 مستودع النخب</button>
+</div>
+<section class="pane on" id="m1">
+<div class="tabs">
+  <button class="tab on" data-p="p1">📝 طلب شراء</button>
+  <button class="tab" data-p="p2">✅ تنفيذ طلب الشراء</button>
+</div>
+
+<section class="pane on" id="p1">
+  <div class="card"><h2>بطاقة مشتريات جديدة</h2>
+    <div class="grid">
+      <div><label>التاريخ</label><input type="date" id="o_date"></div>
+      <div><label>رقم الطلب (تلقائي)</label><input id="o_no" readonly></div>
+      <div class="s2"><label>اسم المادة</label><input id="o_name"></div>
+      <div class="s4"><label>المواصفات</label><input id="o_spec"></div>
+      <div><label>العدد المطلوب</label><input type="number" min="0" step="any" id="o_qty"></div>
+      <div><label>اسم الخط</label><input id="o_line"></div>
+      <div class="s2"><label>اسم الوحدة</label><input id="o_unit"></div>
+    </div>
+    <div class="bar">
+      <button class="btn b-teal" onclick="addOrder()">✚ إضافة البطاقة</button>
+      <button class="btn b-org" onclick="exportXlsx('orders')">📊 تصدير الطلبات إلى Excel</button>
+    </div>
+  </div>
+  <div class="card" style="border-top-color:var(--org)"><h2 style="color:var(--org)">💰 مجموع أسعار المشتريات بين تاريخين</h2>
+    <div class="grid">
+      <div><label>من تاريخ</label><input type="date" id="s_from"></div>
+      <div><label>إلى تاريخ</label><input type="date" id="s_to"></div>
+      <div class="s2" style="display:flex;align-items:flex-end"><button class="btn b-org" onclick="sumPrices()">💰 احسب المجموع</button></div>
+    </div>
+    <div class="res" id="s_res"></div>
+  </div>
+  <div class="tw"><table id="ot"></table></div>
+</section>
+
+<section class="pane" id="p2">
+  <div class="card g"><h2>تنفيذ طلب الشراء</h2>
+    <div class="grid">
+      <div class="s4"><label>اختر المادة المطلوبة</label><select id="combo"></select></div>
+      <div><label>اسم المادة</label><input id="e_name" readonly></div>
+      <div><label>رقم الطلب</label><input id="e_ono" readonly></div>
+      <div><label>رقم الشراء (تلقائي)</label><input id="e_pno" readonly></div>
+      <div><label>المتبقي من العدد المطلوب</label><input id="e_rem" readonly></div>
+      <div class="s4"><label>المواصفات</label><input id="e_spec" readonly></div>
+      <div><label>العدد الذي تم تنفيذه</label><input type="number" min="0" step="any" id="e_qty"></div>
+      <div class="s2"><label>المورد</label><input id="e_sup"></div>
+      <div><label>السعر</label><input type="number" min="0" step="any" id="e_price"></div>
+    </div>
+    <div class="bar">
+      <button class="btn b-teal" onclick="doExec()">✔ تنفيذ الطلب</button>
+      <button class="btn b-org" onclick="exportXlsx('execs')">📊 تصدير التنفيذ إلى Excel</button>
+    </div>
+  </div>
+  <div class="tw"><table id="et"></table></div>
+</section>
+</section>
+
+<section class="pane" id="m2">
+<div class="tabs">
+  <button class="tab on" data-p="r1">📥 إدخالات</button>
+  <button class="tab" data-p="r2">📤 إخراجات</button>
+  <button class="tab" data-p="r3">📋 جرد</button>
+  <button class="tab" data-p="r4">🗄 أرشيف</button>
+</div>
+
+<section class="pane on" id="r1">
+  <div class="bar" style="margin:0 0 14px">
+    <button class="btn b-teal" onclick="openMat()">＋ إضافة بطاقة مادة جديدة</button>
+    <button class="btn b-org" onclick="exportXlsx('mats')">📊 تصدير إلى Excel</button>
+    <button class="btn b-ind" onclick="$('imp').click()">📥 استيراد من Excel</button>
+  </div>
+  <div id="lowbar"></div>
+  <div class="tw"><table id="mt"></table></div>
+</section>
+
+<section class="pane" id="r2">
+  <div class="card g"><h2>إخراج مادة</h2>
+    <div class="grid">
+      <div class="s2"><label>إخراج مادة</label><select id="x_mat" onchange="pickOut()"></select></div>
+      <div><label>المتبقي (عدد)</label><input id="x_rem" readonly></div>
+      <div><label>متوسط وزن الرول/الكرتونة</label><input id="x_avg" readonly></div>
+      <div class="s4"><label>مواصفات المادة</label><input id="x_spec" readonly></div>
+      <div><label>مكان الاستخدام</label><select id="x_place"></select></div>
+      <div><label>العدد المستخدم</label><input type="number" min="0" step="any" id="x_used" oninput="calcOut()"></div>
+      <div class="s2"><label>الوزن الكلي المستخدم</label><input id="x_w" readonly></div>
+      <div class="s4" id="x_warn"></div>
+    </div>
+    <div class="bar">
+      <button class="btn b-teal" onclick="saveOut()">✔ حفظ الإخراج</button>
+      <button class="btn b-org" onclick="exportXlsx('outs')">📊 تصدير إلى Excel</button>
+      <button class="btn b-ind" onclick="$('imp').click()">📥 استيراد من Excel</button>
+    </div>
+  </div>
+  <div class="tw"><table id="xt"></table></div>
+</section>
+
+<section class="pane" id="r3">
+  <div class="card" style="border-top-color:var(--org)"><h2 style="color:var(--org)">📄 تقارير الجرد PDF</h2>
+    <label>تصفية المواد (اختر واحداً أو أكثر — بدون اختيار تظهر كل المواد)</label>
+    <div id="flt" style="margin:6px 0 16px">
+      <label class="chip"><input type="checkbox" value="ok" onchange="renderRaw()"> ✅ مقبول</label>
+      <label class="chip"><input type="checkbox" value="bad" onchange="renderRaw()"> ❌ مرفوض</label>
+      <label class="chip"><input type="checkbox" value="sample" onchange="renderRaw()"> 🧪 عينات</label>
+      <label class="chip"><input type="checkbox" value="dmg" onchange="renderRaw()"> ⚠️ تالف</label>
+    </div>
+    <label>حدد الخطوط المراد جردها (واحد أو أكثر) ثم اضغط «ابدأ الجرد»</label>
+    <div class="lines" id="lines"></div>
+    <div class="bar">
+      <button class="btn b-teal" onclick="startInv()">▶ ابدأ الجرد (PDF)</button>
+      <button class="btn b-ind" onclick="selLines()">☑ تحديد كل الخطوط</button>
+      
+      <button class="btn b-org" onclick="exportXlsx('inv')">📊 تصدير الجرد إلى Excel</button>
+    </div>
+    <p style="font-size:13px;color:var(--mut);margin-top:12px">عند تعليم مادة بـ ✖ في عمود «تجهيز الجرد» تنتقل إلى تبويب «أرشيف» وتُستبعد من كل أنواع الجرد ومن تصدير Excel.</p>
+  </div>
+  <div class="tw"><table id="it"></table></div>
+</section>
+
+<section class="pane" id="r4">
+  <div class="bar" style="margin:0 0 14px">
+    <button class="btn b-red" onclick="archivePdf()">📄 إصدار PDF</button>
+    <button class="btn b-org" onclick="archXlsx()">📊 إصدار Excel</button>
+    <button class="btn b-ind" onclick="$('imp').click()">📥 استيراد من Excel</button>
+    <button class="btn b-teal" onclick="resetSkip()">↺ إعادة كل المواد إلى الجرد</button>
+  </div>
+  <div class="tw"><table id="at"></table></div>
+</section>
+</section>
+
+<section class="pane" id="m3">
+<div class="tabs">
+  <button class="tab on" data-p="s1">📦 مواد</button>
+  <button class="tab" data-p="s2">📋 جرد</button>
+</div>
+
+<section class="pane on" id="s1">
+  <div class="card g"><h2 id="k_title">إدخال مادة إلى المستودع</h2>
+    <div class="grid">
+      <div class="s2"><label>اسم المادة</label><select id="k_item"></select></div>
+      <div><label>تاريخ الإدخال</label><input type="date" id="k_date"></div>
+      <div><label>النخب</label><select id="k_grade"></select></div>
+      <div><label>القياس</label><select id="k_size"></select></div>
+      <div><label>الكمية</label><input type="number" min="0" step="any" id="k_qty"></div>
+    </div>
+    <div class="bar">
+      <button class="btn b-teal" id="k_save" onclick="saveStock()">✔ حفظ</button>
+      <button class="btn b-red" id="k_cancel" style="display:none" onclick="cancelStock()">إلغاء التعديل</button>
+      <button class="btn b-org" onclick="exportXlsx('stock')">📊 تصدير إلى Excel</button>
+      <button class="btn b-ind" onclick="$('imp').click()">📥 استيراد من Excel</button>
+    </div>
+  </div>
+  <div class="tw"><table id="kt"></table></div>
+</section>
+
+<section class="pane" id="s2">
+  <div class="card" style="border-top-color:var(--org)"><h2 style="color:var(--org)">📋 جرد مستودع النخب</h2>
+    <div class="res" id="k_stats" style="margin:0 0 16px"></div>
+    <div class="grid">
+      <div class="s2"><label>جرد تفصيلي — يعرض كل مدخل على حدة ويُختم بمجموع الكميات</label>
+        <div class="bar" style="margin-top:6px">
+          <button class="btn b-org" onclick="exportXlsx('sdet')">📊 Excel</button>
+          <button class="btn b-red" onclick="stockPdf('det')">📄 PDF</button>
+        </div></div>
+      <div class="s2"><label>جرد المجاميع — المواد المتشابهة في بند واحد بكمياتها مجموعة</label>
+        <div class="bar" style="margin-top:6px">
+          <button class="btn b-org" onclick="exportXlsx('sgrp')">📊 Excel</button>
+          <button class="btn b-red" onclick="stockPdf('grp')">📄 PDF</button>
+        </div></div>
+    </div>
+  </div>
+  <div class="tw"><table id="gt"></table></div>
+</section>
+</section>
+</main>
+
+<dialog id="md" class="big">
+  <h2 id="md_title">＋ بطاقة مادة جديدة</h2>
+  <div class="grid">
+    <div class="s2"><label>اسم المادة</label><input id="m_name"></div>
+    <div><label>العدد</label><input type="number" min="0" step="any" id="m_count" oninput="calcAvg()"></div>
+    <div><label>الوزن (ممنوع صفر)</label><input type="number" min="0" step="any" id="m_weight" oninput="calcAvg()"></div>
+    <div class="s4"><label>مواصفات المادة</label><input id="m_spec"></div>
+    <div class="s2"><label>اسم المورد</label><input id="m_sup"></div>
+    <div class="s2"><label>اسم صانع المادة</label><input id="m_maker"></div>
+    <div><label>تاريخ الاستلام</label><input type="date" id="m_recv"></div>
+    <div><label>تاريخ الطلب</label><input type="date" id="m_order"></div>
+    <div><label>تاريخ انتهاء المادة</label><input type="date" id="m_exp"></div>
+    <div><label>متوسط الوزن (تلقائي)</label><input id="m_avg" readonly></div>
+    <div><label>الحد الأدنى للطلب</label><input type="number" min="0" step="any" id="m_min"></div>
+    <div><label>نوع الطلب</label><select id="m_type"><option value="">— اختر —</option><option>داخلي</option><option>خارجي</option></select></div>
+    <div class="s4"><label>مكان الاستخدام (اختر واحداً أو أكثر)</label><div id="pl"></div></div>
+    <div class="s4"><label class="chip" style="border-color:#F59E0B"><input type="checkbox" id="m_sample"> 🧪 عينة</label></div>
+  </div>
+  <div class="qbox"><h3>🔬 قسم الجودة</h3>
+    <div class="grid">
+      <div class="s2"><label>استلام مخبر الجودة</label><select id="q_ok"><option value="">— اختر —</option><option>مقبول</option><option>مرفوض</option></select></div>
+      <div class="s2"><label>تاريخ تجربة المادة</label><input type="date" id="q_trial"></div>
+      <div class="s4"><label>ملاحظات الجودة</label><textarea id="q_notes"></textarea></div>
+    </div>
+  </div>
+  <div class="bar"><button class="btn b-teal" onclick="saveMat()">💾 حفظ</button><button class="btn b-red" onclick="$('md').close()">إلغاء</button></div>
+</dialog>
+
+<dialog id="sd">
+  <h2>🔄 المزامنة الدائمة مع الجوال</h2>
+  <p>أدخل رابط قاعدة بيانات Firebase Realtime Database المجانية ورمزاً سرياً من اختيارك. أدخل نفس القيمتين على الكمبيوتر والجوال لتتطابق البيانات تلقائياً.</p>
+  <label>رابط قاعدة البيانات</label><input id="sy_url" dir="ltr" placeholder="https://اسم-مشروعك-default-rtdb.firebaseio.com">
+  <label>الرمز السري (أحرف وأرقام إنجليزية)</label><input id="sy_code" dir="ltr" placeholder="mycompany2026xyz">
+  <div class="bar"><button class="btn b-teal" onclick="saveSync()">حفظ وتفعيل</button><button class="btn b-red" onclick="offSync()">إيقاف</button><button class="btn b-ind" onclick="$('sd').close()">إغلاق</button></div>
+</dialog>
+<dialog id="nd"><h2 id="nd_t"></h2><div id="nd_b" style="line-height:2;font-size:15px;margin:10px 0 18px"></div><div class="bar"><button class="btn b-ind" onclick="$('nd').close()">حسناً</button></div></dialog>
+<div id="toast"></div>
+
+<script>
+const OC=["رقم الطلب","التاريخ","اسم المادة","المواصفات","العدد المطلوب","اسم الخط","اسم الوحدة","المنفذ","المتبقي"];
+const EC=["رقم الشراء","رقم الطلب","اسم المادة","المواصفات","العدد المنفذ","المورد","السعر"];
+let D={orders:[],execs:[]};
+try{D=JSON.parse(localStorage.getItem("pm_data"))||D}catch(e){}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const save=()=>{D.updated=Date.now();try{localStorage.setItem("pm_data",JSON.stringify(D))}catch(e){}push()};
+const rem=no=>{const o=D.orders.find(o=>o.no==no);return +(o.qty-D.execs.filter(x=>x.ono==no).reduce((a,x)=>a+x.qty,0)).toFixed(6)};
+const nextNo=a=>Math.max(0,...a)+1;
+
+function toast(msg,ok=true){const t=$("toast");t.textContent=msg;t.style.background=ok?"#10B981":"#EF4444";t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600)}
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest(".tab");if(!b)return;
+  b.parentElement.querySelectorAll(".tab").forEach(t=>{t.classList.remove("on");$(t.dataset.p).classList.remove("on")});
+  b.classList.add("on");$(b.dataset.p).classList.add("on")});
+
+function orderRows(){return D.orders.map(o=>{const r=rem(o.no);return[o.no,o.date,o.name,o.spec,o.qty,o.line,o.unit,+(o.qty-r).toFixed(6),r]})}
+function execRows(){return D.execs.map(x=>[x.pno,x.ono,x.name,x.spec,x.qty,x.supplier,x.price])}
+
+function render(){renderRaw();renderStock();renderExtra();
+  const or=orderRows(),er=execRows();
+  $("ot").innerHTML="<tr>"+OC.map(c=>`<th>${c}</th>`).join("")+"<th></th></tr>"+
+    (or.length?or.map(r=>`<tr class="${r[8]==0?"done":""}">`+r.map(v=>`<td>${esc(v)}</td>`).join("")+`<td><button class="x" onclick="delOrder(${r[0]})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="10">لا توجد بطاقات مشتريات بعد</td></tr>`);
+  $("et").innerHTML="<tr>"+EC.map(c=>`<th>${c}</th>`).join("")+"<th></th></tr>"+
+    (er.length?er.map(r=>"<tr>"+r.map(v=>`<td>${esc(v)}</td>`).join("")+`<td><button class="x" onclick="delExec(${r[0]})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="8">لا توجد عمليات شراء منفذة بعد</td></tr>`);
+  const open=D.orders.filter(o=>rem(o.no)>0);
+  $("combo").innerHTML='<option value="">— اختر —</option>'+open.map(o=>`<option value="${o.no}">طلب ${o.no} | ${esc(o.name)} | المتبقي: ${rem(o.no)}</option>`).join("");
+  $("o_no").value=nextNo(D.orders.map(o=>o.no));
+  $("e_pno").value=nextNo(D.execs.map(x=>x.pno));
+  ["e_name","e_ono","e_spec","e_rem"].forEach(i=>$(i).value="");
+  $("st1").textContent="الطلبات: "+D.orders.length;$("st2").textContent="عمليات الشراء: "+D.execs.length;
+}
+$("o_date").value=new Date().toISOString().slice(0,10);
+
+function addOrder(){
+  const name=$("o_name").value.trim(),qty=parseFloat($("o_qty").value);
+  if(!$("o_date").value)return toast("الرجاء إدخال التاريخ",false);
+  if(!name)return toast("الرجاء إدخال اسم المادة",false);
+  if(!(qty>0))return toast("العدد المطلوب يجب أن يكون أكبر من صفر",false);
+  D.orders.push({no:nextNo(D.orders.map(o=>o.no)),date:$("o_date").value,name,spec:$("o_spec").value.trim(),qty,line:$("o_line").value.trim(),unit:$("o_unit").value.trim()});
+  ["o_name","o_spec","o_qty","o_line","o_unit"].forEach(i=>$(i).value="");
+  save();render();toast("تمت إضافة البطاقة ✔");
+}
+function delOrder(no){
+  if(D.execs.some(x=>x.ono==no))return toast("لا يمكن حذف طلب تم تنفيذ جزء منه",false);
+  if(confirm("حذف الطلب رقم "+no+"؟")){D.orders=D.orders.filter(o=>o.no!=no);save();render()}
+}
+$("combo").onchange=()=>{
+  const o=D.orders.find(o=>o.no==$("combo").value);
+  $("e_name").value=o?o.name:"";$("e_ono").value=o?o.no:"";$("e_spec").value=o?o.spec:"";$("e_rem").value=o?rem(o.no):"";
+};
+function doExec(){
+  const o=D.orders.find(o=>o.no==$("combo").value);
+  if(!o)return toast("اختر المادة المطلوبة أولاً",false);
+  const q=parseFloat($("e_qty").value),p=parseFloat($("e_price").value),sup=$("e_sup").value.trim();
+  if(!(q>0))return toast("العدد المنفذ يجب أن يكون أكبر من صفر",false);
+  if(q>rem(o.no))return toast(`ممنوع تجاوز العدد المطلوب — المتبقي ${rem(o.no)} فقط`,false);
+  if(!sup)return toast("الرجاء إدخال اسم المورد",false);
+  if(!(p>=0))return toast("الرجاء إدخال السعر",false);
+  D.execs.push({pno:nextNo(D.execs.map(x=>x.pno)),ono:o.no,name:o.name,spec:o.spec,qty:q,supplier:sup,price:p});
+  ["e_qty","e_sup","e_price"].forEach(i=>$(i).value="");
+  save();render();toast("تم تنفيذ الطلب ✔");
+}
+function delExec(no){if(confirm("حذف عملية الشراء رقم "+no+"؟ سيعود العدد إلى المتبقي.")){D.execs=D.execs.filter(x=>x.pno!=no);save();render()}}
+
+/* ===== مولّد ملفات XLSX (بدون أي مكتبات خارجية) ===== */
+const CT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc32=b=>{let c=~0;for(let i=0;i<b.length;i++)c=CT[(c^b[i])&255]^(c>>>8);return ~c>>>0};
+function zip(files){
+  const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+  for(const[name,text]of files){
+    const nb=enc.encode(name),d=enc.encode(text),crc=crc32(d);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);
+    h.setUint32(14,crc,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer),nb,d);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);
+    c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
+    cd.push(new Uint8Array(c.buffer),nb);
+    off+=30+nb.length+d.length;
+  }
+  const cdSize=cd.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cd,new Uint8Array(e.buffer)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+const NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+const HDR='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+const STYLES=HDR+`<styleSheet ${NS}>
+<fonts count="4"><font><sz val="11"/><name val="Segoe UI"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Segoe UI"/></font><font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Segoe UI"/></font><font><b/><sz val="11"/><color rgb="FF1E1B4B"/><name val="Segoe UI"/></font></fonts>
+<fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF4F46E5"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF4338CA"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFEEF2FF"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF10B981"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE68A"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFC7D2FE"/></left><right style="thin"><color rgb="FFC7D2FE"/></right><top style="thin"><color rgb="FFC7D2FE"/></top><bottom style="thin"><color rgb="FFC7D2FE"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="7">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+</cellXfs></styleSheet>`;
+const col=i=>String.fromCharCode(65+i);
+const cell=(r,c,v,s)=>typeof v==="number"?`<c r="${col(c)}${r}" s="${s}"><v>${v}</v></c>`:v===""||v==null?`<c r="${col(c)}${r}" s="${s}"/>`:`<c r="${col(c)}${r}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+function sheetXml(title,cols,rows,ts){
+  const n=cols.length;
+  const w=cols.map((c,j)=>Math.min(45,Math.max(13,...[c,...rows.map(r=>(r.cells||r)[j])].map(v=>String(v).length+6))));
+  let x=HDR+`<worksheet ${NS}><sheetViews><sheetView rightToLeft="1" showGridLines="0" workbookViewId="0"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="21"/><cols>`+
+    w.map((v,j)=>`<col min="${j+1}" max="${j+1}" width="${v}" customWidth="1"/>`).join("")+`</cols><sheetData>`;
+  x+=`<row r="1" ht="36" customHeight="1">`+cols.map((_,j)=>cell(1,j,j?"":title,ts)).join("")+`</row>`;
+  x+=`<row r="2" ht="26" customHeight="1">`+cols.map((c,j)=>cell(2,j,c,3)).join("")+`</row>`;
+  rows.forEach((r,i)=>{const t=!!r.total;x+=`<row r="${i+3}">`+(r.cells||r).map((v,j)=>cell(i+3,j,v,t?6:(i%2)?5:4)).join("")+`</row>`});
+  return x+`</sheetData><mergeCells count="1"><mergeCell ref="A1:${col(n-1)}1"/></mergeCells></worksheet>`;
+}
+function exportXlsx(kind){
+  const SH={orders:["طلبات الشراء",OC,orderRows(),1],execs:["تنفيذ طلبات الشراء",EC,execRows(),2],mats:["إدخالات المواد",MC,matRows(),1],outs:["إخراجات المواد",OUC,outRows(),2],inv:["جرد المواد",IC,invRows(),1],arch:["أرشيف المواد",MC,matRows(true),2],stock:["مواد النخب",KC,stockRows(),2],sdet:["جرد تفصيلي للنخب",KD,stockDetRows(),1],sgrp:["جرد مجاميع النخب",KG,stockGrpRows(),1]};
+  const sh=kind==="all"?["orders","execs","mats","outs","inv","stock"].map(k=>SH[k]):[SH[kind]];
+  const files=[
+    ["[Content_Types].xml",HDR+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`+sh.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")+`</Types>`],
+    ["_rels/.rels",HDR+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml",HDR+`<workbook ${NS} xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>`+sh.map((s,i)=>`<sheet name="${esc(s[0])}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")+`</sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels",HDR+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+sh.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")+`<Relationship Id="rId${sh.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml",STYLES],
+    ...sh.map((s,i)=>[`xl/worksheets/sheet${i+1}.xml`,sheetXml(s[0],s[1],s[2],s[3])])
+  ];
+  saveFile(zip(files),({all:"المشتريات_والمواد_الكاملة",orders:"طلبات_الشراء",execs:"تنفيذ_الشراء",mats:"إدخالات_المواد",outs:"إخراجات_المواد",inv:"جرد_المواد",arch:"أرشيف_المواد",stock:"مواد_مستودع_النخب",sdet:"جرد_النخب_التفصيلي",sgrp:"جرد_النخب_المجاميع"})[kind]+".xlsx");
+}
+
+/* ===== مجموع الأسعار بين تاريخين ===== */
+const money=n=>(+n).toLocaleString("en-US",{maximumFractionDigits:2});
+function sumPrices(){
+  const a=$("s_from").value,b=$("s_to").value;
+  if(!a||!b)return toast("أدخل تاريخ البداية وتاريخ النهاية",false);
+  if(a>b)return toast("تاريخ البداية بعد تاريخ النهاية",false);
+  const sel=D.execs.filter(x=>{const o=D.orders.find(o=>o.no==x.ono);return o&&o.date>=a&&o.date<=b});
+  const sum=sel.reduce((t,x)=>t+x.price,0),val=sel.reduce((t,x)=>t+x.price*x.qty,0);
+  $("s_res").innerHTML=`<span>مجموع الأسعار: <b>${money(sum)}</b></span><span>الإجمالي (السعر × العدد): <b>${money(val)}</b></span><span>عدد عمليات الشراء: <b>${sel.length}</b></span>`;
+}
+
+/* ===== استيراد Excel (بدون مكتبات) ===== */
+async function unzip(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf),td=new TextDecoder(),out={};
+  let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+  if(e<0)throw new Error("zip");
+  let p=dv.getUint32(e+16,true);const n=dv.getUint16(e+10,true);
+  for(let i=0;i<n;i++){
+    const m=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=td.decode(u8.subarray(p+46,p+46+nl));p+=46+nl+el+cl;
+    if(!/\.(xml|rels)$/.test(name))continue;
+    const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true);
+    let d=u8.subarray(ds,ds+cs);
+    if(m===8)d=new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+    out[name]=td.decode(d);
+  }
+  return out;
+}
+const X=s=>new DOMParser().parseFromString(s,"application/xml");
+async function readXlsx(file){
+  const f=await unzip(await file.arrayBuffer());
+  const wb=X(f["xl/workbook.xml"]),rl=X(f["xl/_rels/workbook.xml.rels"]),tg={};
+  [...rl.getElementsByTagName("Relationship")].forEach(r=>{const t=r.getAttribute("Target").replace(/^\//,"");tg[r.getAttribute("Id")]=t.startsWith("xl/")?t:"xl/"+t});
+  const ss=f["xl/sharedStrings.xml"]?[...X(f["xl/sharedStrings.xml"]).getElementsByTagName("si")].map(si=>[...si.getElementsByTagName("t")].map(t=>t.textContent).join("")):[];
+  return [...wb.getElementsByTagName("sheet")].map(s=>{
+    const doc=X(f[tg[s.getAttribute("r:id")]]),rows=[];
+    [...doc.getElementsByTagName("c")].forEach(c=>{
+      const m=c.getAttribute("r").match(/^([A-Z]+)(\d+)$/);let ci=0;for(const ch of m[1])ci=ci*26+ch.charCodeAt(0)-64;ci--;
+      const t=c.getAttribute("t"),v=c.getElementsByTagName("v")[0];let val="";
+      if(t==="s"&&v)val=ss[+v.textContent]??"";
+      else if(t==="inlineStr")val=[...c.getElementsByTagName("t")].map(x=>x.textContent).join("");
+      else if(v)val=(t==="str"||t==="b"||t==="e")?v.textContent:+v.textContent;
+      (rows[+m[2]-1]=rows[+m[2]-1]||[])[ci]=val;
+    });
+    return{name:s.getAttribute("name"),rows:Array.from(rows,r=>Array.from(r||[],v=>v??""))};
+  });
+}
+const toDate=v=>typeof v==="number"&&v>20000&&v<90000?new Date(Date.UTC(1899,11,30)+Math.round(v)*864e5).toISOString().slice(0,10):String(v).trim();
+function pick(rows,key){
+  const h=rows.findIndex(r=>r&&String(r[0]).trim()===key);if(h<0)return[];
+  const H=rows[h].map(x=>String(x).trim());
+  return rows.slice(h+1).filter(r=>r&&r.some(v=>v!=="")).map(r=>n=>r[H.indexOf(n)]??"");
+}
+
+
+/* ===== المزامنة الدائمة (Firebase REST) ===== */
+let S={};try{S=JSON.parse(localStorage.getItem("pm_sync"))||{}}catch(e){}
+const rurl=()=>S.url.replace(/\/+$/,"")+"/"+encodeURIComponent(S.code)+".json";
+const cloud=(t,ok=true)=>{const c=$("cloud");c.textContent=t;c.style.background=ok?"":"#EF4444"};
+async function push(){
+  if(!S.url||!S.code)return;
+  try{const r=await fetch(rurl(),{method:"PUT",body:JSON.stringify(D)});if(!r.ok)throw 0;cloud("☁ تمت المزامنة")}catch(e){cloud("☁ غير متصل",false)}
+}
+async function pull(){
+  if(!S.url||!S.code)return;
+  try{
+    const res=await fetch(rurl());if(!res.ok)throw 0;const r=await res.json();
+    if(r&&(r.updated||0)>(D.updated||0)){D={orders:r.orders||[],execs:r.execs||[],mats:r.mats||[],outs:r.outs||[],stock:r.stock||[],updated:r.updated};try{localStorage.setItem("pm_data",JSON.stringify(D))}catch(e){}render()}
+    else if(!r||(r.updated||0)<(D.updated||0))return push();
+    cloud("☁ متصل")
+  }catch(e){cloud("☁ غير متصل",false)}
+}
+function openSync(){$("sy_url").value=S.url||"";$("sy_code").value=S.code||"";$("sd").showModal()}
+function saveSync(){
+  const u=$("sy_url").value.trim(),c=$("sy_code").value.trim();
+  if(!/^https:\/\//.test(u)||!/^[A-Za-z0-9_-]{6,}$/.test(c))return toast("تأكد من الرابط، والرمز 6 أحرف/أرقام إنجليزية على الأقل",false);
+  S={url:u,code:c};localStorage.setItem("pm_sync",JSON.stringify(S));$("sd").close();pull();toast("تم تفعيل المزامنة ✔");
+}
+function offSync(){S={};localStorage.removeItem("pm_sync");cloud("");$("sd").close();toast("تم إيقاف المزامنة")}
+setInterval(pull,8000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()});
+if(S.url)pull();
+if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+/* ===== المواد الأولية ===== */
+D.mats=D.mats||[];D.outs=D.outs||[];
+const PLACES=["CHT-1","PHA-1","DL-1","FB-2","CB-1"];
+const LINES=[["DL-1","خط النسائية"],["PHA-1","خط العجزة"],["CB-1","خط الأطفال"],["FB-2","خط الأطفال"],["CHT-1","خط المناديل"]];
+const today=()=>new Date().toISOString().slice(0,10);
+function saveFile(blob,fn){
+  const CP=window.Capacitor;
+  if(CP&&CP.isNativePlatform&&CP.isNativePlatform()&&CP.Plugins&&CP.Plugins.Filesystem&&CP.Plugins.Share){
+    const fr=new FileReader();
+    fr.onload=async()=>{
+      try{
+        const r=await CP.Plugins.Filesystem.writeFile({path:fn,data:fr.result.split(",")[1],directory:"CACHE"});
+        await CP.Plugins.Share.share({title:fn,url:r.uri,dialogTitle:"حفظ أو مشاركة الملف"});
+      }catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("تعذر حفظ الملف",false)}
+    };
+    fr.readAsDataURL(blob);return;
+  }
+  if(window.pywebview&&pywebview.api&&pywebview.api.save_file){
+    const fr=new FileReader();
+    fr.onload=async()=>{if(await pywebview.api.save_file(fr.result.split(",")[1],fn))toast("تم حفظ الملف ✔")};
+    fr.readAsDataURL(blob);return;
+  }
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fn;
+  document.body.appendChild(a);a.click();a.remove();toast("تم تنزيل الملف ✔");
+}
+const MC=["رقم المادة","اسم المادة","العدد","الوزن","مواصفات المادة","اسم المورد","اسم الصانع","تاريخ الإدخال","تاريخ الاستلام","تاريخ الطلب","تاريخ انتهاء المادة","متوسط الوزن","مكان الاستخدام","استلام الجودة","ملاحظات الجودة","تاريخ التجربة","عينة","مؤرشف","الحد الأدنى للطلب","نوع الطلب","المستخدم","المتبقي"];
+const OUC=["رقم الإخراج","رقم المادة","اسم المادة","المواصفات","مكان الاستخدام","العدد المستخدم","الوزن الكلي المستخدم","تاريخ الإخراج","تالف"];
+const IC=["اسم المادة","المواصفات","اسم المورد","العدد المستلم","المستخدم","المتبقي (عدد)","الوزن المتبقي","مكان الاستخدام","تاريخ انتهاء المادة","الجودة","عينة","التالف (عدد)"];
+const usedOf=id=>D.outs.filter(o=>o.matId==id).reduce((a,o)=>a+o.used,0);
+const remOf=m=>+(m.count-usedOf(m.id)).toFixed(6);
+/* متوسط وزن الرول/الكرتونة = الوزن ÷ العدد */
+const avgOf=m=>m.weight/m.count;
+const matRows=arch=>(arch?D.mats.filter(m=>m.skip):D.mats).map(m=>[m.id,m.name,m.count,m.weight,m.spec,m.supplier,m.maker,m.date,m.recv,m.order,m.exp,+avgOf(m).toFixed(4),m.places.join("، "),m.qOk||"",m.qNotes||"",m.qTrial||"",m.sample?"نعم":"",m.skip?"نعم":"",m.min||0,m.orderType||"",usedOf(m.id),remOf(m)]);
+const outRows=()=>D.outs.map(o=>[o.id,o.matId,o.name,o.spec,o.place,o.used,o.weight,o.date,o.damaged?"نعم":""]);
+const FLT_NAMES={ok:"مقبول",bad:"مرفوض",sample:"عينات",dmg:"تالف"};
+const fltSel=()=>[...document.querySelectorAll("#flt input:checked")].map(c=>c.value);
+const dmgOf=id=>D.outs.filter(o=>o.matId==id&&o.damaged).reduce((a,o)=>a+o.used,0);
+const FLT_Q={ok:"مقبول",bad:"مرفوض"};
+const fltMats=()=>{
+  const f=fltSel(),sm=f.includes("sample"),dm=f.includes("dmg"),q=["ok","bad"].filter(k=>f.includes(k)).map(k=>FLT_Q[k]);
+  const okQ=m=>!q.length?(sm?!!m.sample:true):(sm?!!m.sample:!m.sample)&&q.includes(m.qOk);
+  return D.mats.filter(m=>okQ(m)&&(!dm||dmgOf(m.id)>0));
+};
+const invMats=()=>fltMats().filter(m=>!m.skip);
+const fltText=()=>fltSel().length?"التصفية: "+fltSel().map(k=>FLT_NAMES[k]).join(" + "):"بدون تصفية (كل المواد)";
+const invRowOf=m=>[m.name,m.spec,m.supplier,m.count,usedOf(m.id),remOf(m),+(remOf(m)*avgOf(m)).toFixed(3),m.places.join("، "),m.exp,m.qOk||"—",m.sample?"نعم":"",dmgOf(m.id)];
+const invRows=()=>invMats().map(invRowOf);
+
+function renderRaw(){
+  const mr=D.mats.slice().reverse();
+  $("mt").innerHTML="<tr>"+["اسم المادة","العدد","مواصفاتها","اسم المورد","اسم الصانع","تاريخ الإدخال","نوع الطلب","الحد الأدنى","المتبقي","الجودة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (mr.length?mr.map(m=>`<tr class="${isLow(m)?"low":""}"><td>${esc(m.name)}${m.sample?" 🧪":""}${m.skip?" 🗄":""}</td><td>${m.count}</td><td>${esc(m.spec)}</td><td>${esc(m.supplier)}</td><td>${esc(m.maker)}</td><td>${esc(m.date)}</td><td>${esc(m.orderType||"—")}</td><td>${m.min||"—"}</td><td><b>${remOf(m)}</b>${isLow(m)?" ⚠️":""}</td><td>${esc(m.qOk||"—")}</td><td style="white-space:nowrap"><button class="x" style="background:var(--ind)" onclick="openMat(${m.id})">تعديل</button> <button class="x" onclick="delMat(${m.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="11">لا توجد مواد مدخلة بعد — اضغط «إضافة بطاقة مادة جديدة»</td></tr>`);
+  const xr=D.outs.slice().reverse();
+  $("xt").innerHTML="<tr>"+["رقم الإخراج","المادة","المواصفات","مكان الاستخدام","العدد المستخدم","الوزن الكلي","التاريخ","الحالة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (xr.length?xr.map(o=>`<tr${o.damaged?' style="color:#B91C1C"':""}><td>${o.id}</td><td>${esc(o.name)}</td><td>${esc(o.spec)}</td><td>${esc(o.place)}</td><td>${o.used}</td><td>${+o.weight.toFixed(3)}</td><td>${esc(o.date)}</td><td>${o.damaged?"<b>⚠️ تالف</b>":"سليم"}</td><td style="white-space:nowrap"><button class="x" style="background:${o.damaged?"var(--teal)":"var(--org)"}" onclick="togDmg(${o.id})">${o.damaged?"إلغاء التالف":"تحديد تالف"}</button> <button class="x" onclick="delOut(${o.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="9">لا توجد إخراجات بعد</td></tr>`);
+  const open=D.mats.filter(m=>remOf(m)>0),cur=$("x_mat").value;
+  $("x_mat").innerHTML='<option value="">— اختر المادة —</option>'+open.map(m=>`<option value="${m.id}">${esc(m.name)} | المتبقي: ${remOf(m)}</option>`).join("");
+  if(open.some(m=>m.id==cur))$("x_mat").value=cur;
+  pickOut();
+  const fm=invMats();
+  $("it").innerHTML="<tr>"+["تجهيز الجرد",...IC].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (fm.length?fm.map(m=>`<tr class="${m.skip?"skipped":""}"><td><label class="xchk"><input type="checkbox" ${m.skip?"checked":""} onchange="togSkip(${m.id},this.checked)"><span>✖</span></label></td>`+invRowOf(m).map(v=>`<td>${esc(v)}</td>`).join("")+"</tr>").join(""):`<tr><td class="empty" colspan="13">لا توجد مواد مطابقة</td></tr>`);
+  if(!$("lines").children.length)$("lines").innerHTML=LINES.map(l=>`<label class="chip"><input type="checkbox" value="${l[0]}"> ${l[1]} — ${l[0]}</label>`).join("");
+  if(!$("pl").children.length)$("pl").innerHTML=PLACES.map(p=>`<label class="chip"><input type="checkbox" value="${p}"> ${p}</label>`).join("");
+}
+function calcAvg(){const c=parseFloat($("m_count").value),w=parseFloat($("m_weight").value);$("m_avg").value=c>0&&w>0?+(w/c).toFixed(4):""}
+let editId=null;
+function openMat(id){
+  editId=id||null;const m=editId?D.mats.find(m=>m.id==editId):null;
+  $("md_title").textContent=m?"✏️ تعديل بطاقة المادة":"＋ بطاقة مادة جديدة";
+  const set={m_name:m&&m.name,m_count:m&&m.count,m_weight:m&&m.weight,m_spec:m&&m.spec,m_sup:m&&m.supplier,m_maker:m&&m.maker,m_recv:m?m.recv:today(),m_order:m&&m.order,m_exp:m&&m.exp,q_ok:m&&m.qOk,q_notes:m&&m.qNotes,q_trial:m&&m.qTrial,m_min:m&&m.min,m_type:m&&m.orderType};
+  for(const k in set)$(k).value=set[k]??"";
+  $("m_sample").checked=!!(m&&m.sample);
+  document.querySelectorAll("#pl input").forEach(c=>c.checked=!!(m&&m.places.includes(c.value)));
+  calcAvg();$("md").showModal();
+}
+function saveMat(){
+  const g=i=>$(i).value.trim(),count=parseFloat(g("m_count")),weight=parseFloat(g("m_weight"));
+  const places=[...document.querySelectorAll("#pl input:checked")].map(c=>c.value);
+  if(!g("m_name"))return toast("أدخل اسم المادة",false);
+  if(!(count>0))return toast("العدد يجب أن يكون أكبر من صفر",false);
+  if(!(weight>0))return toast("الوزن ممنوع أن يكون صفراً",false);
+  if(!g("m_spec"))return toast("أدخل مواصفات المادة",false);
+  if(!g("m_sup"))return toast("أدخل اسم المورد",false);
+  if(!g("m_maker"))return toast("أدخل اسم صانع المادة",false);
+  if(!g("m_recv")||!g("m_order")||!g("m_exp"))return toast("أدخل تواريخ الاستلام والطلب والانتهاء",false);
+  if(!places.length)return toast("اختر مكان استخدام واحداً على الأقل",false);
+  const min=parseFloat(g("m_min"));
+  if(!(min>=0))return toast("أدخل الحد الأدنى للطلب (اكتب 0 إن لم يوجد)",false);
+  if(!g("m_type"))return toast("اختر نوع الطلب (داخلي أو خارجي)",false);
+  const f={name:g("m_name"),count,weight,spec:g("m_spec"),supplier:g("m_sup"),maker:g("m_maker"),recv:g("m_recv"),order:g("m_order"),exp:g("m_exp"),places,qOk:g("q_ok"),qNotes:g("q_notes"),qTrial:g("q_trial"),sample:$("m_sample").checked,min,orderType:g("m_type")};
+  if(editId){
+    const m=D.mats.find(m=>m.id==editId);
+    if(count<usedOf(m.id))return toast(`العدد أقل من المستخدم فعلياً (${usedOf(m.id)})`,false);
+    Object.assign(m,f);D.outs.filter(o=>o.matId==m.id).forEach(o=>{o.name=m.name;o.spec=m.spec});
+  }else D.mats.push({id:nextNo(D.mats.map(m=>m.id)),date:today(),...f});
+  $("md").close();save();render();toast(editId?"تم حفظ التعديل ✔":"تمت إضافة المادة ✔");
+}
+function delMat(id){
+  if(D.outs.some(o=>o.matId==id))return toast("لا يمكن حذف مادة لها إخراجات",false);
+  if(confirm("حذف بطاقة المادة؟")){D.mats=D.mats.filter(m=>m.id!=id);save();render()}
+}
+function pickOut(){
+  const m=D.mats.find(m=>m.id==$("x_mat").value);
+  $("x_spec").value=m?m.spec:"";$("x_rem").value=m?remOf(m):"";$("x_avg").value=m?+avgOf(m).toFixed(4):"";
+  $("x_place").innerHTML=m?m.places.map(p=>`<option>${p}</option>`).join(""):"";calcOut();warnOut(m);
+}
+function calcOut(){
+  const m=D.mats.find(m=>m.id==$("x_mat").value),u=parseFloat($("x_used").value);
+  $("x_w").value=m&&u>0?+(u*avgOf(m)).toFixed(3):"";
+}
+function saveOut(){
+  const m=D.mats.find(m=>m.id==$("x_mat").value),u=parseFloat($("x_used").value);
+  if(!m)return toast("اختر المادة أولاً",false);
+  if(!(u>0))return toast("أدخل العدد المستخدم",false);
+  if(u>remOf(m))return toast(`ممنوع تجاوز الموجود — المتبقي ${remOf(m)} فقط`,false);
+  D.outs.push({id:nextNo(D.outs.map(o=>o.id)),matId:m.id,name:m.name,spec:m.spec,place:$("x_place").value,used:u,weight:+(u*avgOf(m)).toFixed(3),date:today()});
+  $("x_used").value="";save();render();toast("تم حفظ الإخراج ✔");lowNotice(m);
+}
+function togDmg(id){const o=D.outs.find(o=>o.id==id);o.damaged=!o.damaged;save();render();toast(o.damaged?"تم تحديد الإخراج كتالف":"تم إلغاء التالف")}
+function delOut(id){if(confirm("حذف الإخراج؟ سيعود العدد إلى المخزون.")){D.outs=D.outs.filter(o=>o.id!=id);save();render()}}
+
+/* استيراد أوراق المواد */
+function parseRaw(sh){
+  const sm=sh.find(s=>/إدخالات المواد/.test(s.name)),sa=sh.find(s=>/أرشيف المواد/.test(s.name)),so=sh.find(s=>/إخراجات المواد/.test(s.name));
+  const mapM=g=>({id:+g("رقم المادة"),name:String(g("اسم المادة")).trim(),count:+g("العدد"),weight:+g("الوزن"),spec:String(g("مواصفات المادة")),supplier:String(g("اسم المورد")),maker:String(g("اسم الصانع")),date:toDate(g("تاريخ الإدخال")),recv:toDate(g("تاريخ الاستلام")),order:toDate(g("تاريخ الطلب")),exp:toDate(g("تاريخ انتهاء المادة")),sample:String(g("عينة")).trim()==="نعم",skip:String(g("مؤرشف")).trim()==="نعم",min:+g("الحد الأدنى للطلب")||0,orderType:String(g("نوع الطلب")).trim(),places:String(g("مكان الاستخدام")).split(/[,،]/).map(x=>x.trim()).filter(x=>PLACES.includes(x)),qOk:String(g("استلام الجودة")),qNotes:String(g("ملاحظات الجودة")),qTrial:toDate(g("تاريخ التجربة"))});
+  const okM=m=>m.id>0&&m.name&&m.count>0&&m.weight>0;
+  const mats=sm?pick(sm.rows,"رقم المادة").map(mapM).filter(okM):[];
+  if(sa)pick(sa.rows,"رقم المادة").map(mapM).filter(okM).forEach(m=>{const e=mats.find(x=>x.id===m.id);if(e){e.skip=true;e.arch=true}else{m.skip=true;m.arch=true;mats.push(m)}});
+  const outs=so?pick(so.rows,"رقم الإخراج").map(g=>({id:+g("رقم الإخراج"),matId:+g("رقم المادة"),name:String(g("اسم المادة")),spec:String(g("المواصفات")),place:String(g("مكان الاستخدام")),used:+g("العدد المستخدم"),weight:+g("الوزن الكلي المستخدم")||0,date:toDate(g("تاريخ الإخراج")),damaged:String(g("تالف")).trim()==="نعم"})).filter(o=>o.id>0&&o.used>0):[];
+  return{mats,outs};
+}
+
+/* دمج الاستيراد: لا يمسح شيئاً — يضيف السجلات الجديدة ويتجاهل المطابق تماماً لما هو موجود */
+function mergeList(cur,inc,key,idf){
+  const pool=new Map(),map=new Map(),add=[];let dup=0;
+  cur.forEach(x=>{const k=key(x);if(!pool.has(k))pool.set(k,[]);pool.get(k).push(x)});
+  inc.forEach(x=>{const k=key(x),a=pool.get(k),old=x[idf];if(a&&a.length){map.set(old,a.shift());dup++}else{x._old=old;add.push(x)}});
+  let n=Math.max(0,...cur.map(x=>x[idf]));
+  add.forEach(x=>{x[idf]=++n;map.set(x._old,x);delete x._old});
+  return{add,map,dup};
+}
+function mergeImport(inc){
+  const R={orders:0,execs:0,mats:0,outs:0,stock:0,dup:0,skipped:0},omap=new Map(),mmap=new Map();
+  if(inc.orders.length){
+    const m=mergeList(D.orders,inc.orders,o=>[o.date,o.name,o.spec,o.qty,o.line,o.unit].join("|"),"no");
+    m.map.forEach((v,k)=>omap.set(k,v));D.orders.push(...m.add);R.orders=m.add.length;R.dup+=m.dup;
+  }
+  if(inc.execs.length){
+    const ex=[];
+    inc.execs.forEach(x=>{const o=omap.has(x.ono)?omap.get(x.ono):(inc.orders.length?null:D.orders.find(o=>o.no==x.ono));if(o){x.ono=o.no;ex.push(x)}else R.skipped++});
+    const m=mergeList(D.execs,ex,x=>[x.ono,x.name,x.spec,x.qty,x.supplier,x.price].join("|"),"pno");
+    D.execs.push(...m.add);R.execs=m.add.length;R.dup+=m.dup;
+  }
+  if(inc.mats.length){
+    const archOld=inc.mats.filter(x=>x.arch).map(x=>x.id);
+    const m=mergeList(D.mats,inc.mats,x=>[x.name,x.count,x.weight,x.spec,x.supplier,x.maker,x.recv,x.order,x.exp].join("|"),"id");
+    m.map.forEach((v,k)=>mmap.set(k,v));m.add.forEach(x=>delete x.arch);D.mats.push(...m.add);
+    archOld.forEach(id=>{const t=mmap.get(id);if(t)t.skip=true});R.mats=m.add.length;R.dup+=m.dup;
+  }
+  if(inc.outs.length){
+    const ox=[];
+    inc.outs.forEach(o=>{const m=mmap.has(o.matId)?mmap.get(o.matId):(inc.mats.length?null:D.mats.find(m=>m.id==o.matId));if(m){o.matId=m.id;o.name=m.name;o.spec=m.spec;ox.push(o)}else R.skipped++});
+    const m=mergeList(D.outs,ox,o=>[o.matId,o.place,o.used,o.date,o.damaged?1:0].join("|"),"id");
+    D.outs.push(...m.add);R.outs=m.add.length;R.dup+=m.dup;
+  }
+  if(inc.stock.length){
+    const m=mergeList(D.stock,inc.stock,e=>[e.item,e.date,e.grade,e.size,e.qty].join("|"),"id");
+    D.stock.push(...m.add);R.stock=m.add.length;R.dup+=m.dup;
+  }
+  return R;
+}
+async function importXlsx(inp){
+  const file=inp.files[0];inp.value="";if(!file)return;
+  try{
+    const sh=await readXlsx(file);
+    const so=sh.find(s=>/طلبات الشراء/.test(s.name)&&!/تنفيذ/.test(s.name))||sh[0];
+    const se=sh.find(s=>/تنفيذ/.test(s.name))||sh[1];
+    const orders=pick(so.rows,"رقم الطلب").map(g=>({no:+g("رقم الطلب"),date:toDate(g("التاريخ")),name:String(g("اسم المادة")).trim(),spec:String(g("المواصفات")),qty:+g("العدد المطلوب"),line:String(g("اسم الخط")),unit:String(g("اسم الوحدة"))})).filter(o=>o.no>0&&o.name&&o.qty>0);
+    const execs=se?pick(se.rows,"رقم الشراء").map(g=>({pno:+g("رقم الشراء"),ono:+g("رقم الطلب"),name:String(g("اسم المادة")),spec:String(g("المواصفات")),qty:+g("العدد المنفذ"),supplier:String(g("المورد")),price:+g("السعر")||0})).filter(x=>x.pno>0&&x.qty>0):[];
+    const raw=parseRaw(sh),stk=parseStock(sh);
+    if(!orders.length&&!execs.length&&!raw.mats.length&&!raw.outs.length&&!stk.length)return toast("لم أجد بيانات مطابقة في الملف — استورد ملفاً صدّره هذا البرنامج",false);
+    const R=mergeImport({orders,execs,mats:raw.mats,outs:raw.outs,stock:stk});
+    save();render();
+    const L=[["طلبات الشراء",R.orders],["تنفيذ الطلبات",R.execs],["المواد الأولية",R.mats],["الإخراجات",R.outs],["مستودع النخب",R.stock]].filter(x=>x[1]).map(x=>`✔ ${x[0]}: أُضيف <b>${x[1]}</b>`);
+    showNotice("تم الاستيراد — بياناتك السابقة كما هي",(L.join("<br>")||"لا توجد سجلات جديدة")+(R.dup?`<br>↺ سجلات مطابقة تماماً لموجود تم تجاهلها: <b>${R.dup}</b>`:"")+(R.skipped?`<br>⚠ سجلات بلا طلب/مادة مرتبطة تم تجاهلها: <b>${R.skipped}</b>`:"")+`<br><small style="color:#6B7280">قد تتغير أرقام السجلات المستوردة لتتابع أرقامك الحالية.</small>`,"#047857");
+  }catch(e){toast("تعذر قراءة الملف — تأكد أنه بصيغة xlsx",false)}
+}
+
+/* ===== تقرير PDF (رسم على Canvas ثم تضمينه في PDF — يدعم العربية بالكامل) ===== */
+const PW=794,PH=1123,SC=2,MG=36;
+function Report(title,sub){
+  const pages=[];let c,g,n=0,y=0;
+  const F=(s,b)=>`${b?"bold ":""}${s}px "Segoe UI",Tahoma,Arial,sans-serif`;
+  function np(){
+    c=document.createElement("canvas");c.width=PW*SC;c.height=PH*SC;g=c.getContext("2d");g.scale(SC,SC);
+    g.fillStyle="#fff";g.fillRect(0,0,PW,PH);g.direction="rtl";g.textBaseline="middle";pages.push(c);n++;
+    if(n===1){const gr=g.createLinearGradient(0,0,PW,0);gr.addColorStop(0,"#7C3AED");gr.addColorStop(1,"#4F46E5");g.fillStyle=gr;g.fillRect(0,0,PW,96);
+      g.fillStyle="#fff";g.textAlign="right";g.font=F(26,1);g.fillText(title,PW-MG,40);g.font=F(13);g.fillText(sub,PW-MG,72);y=120}
+    else{g.fillStyle="#4F46E5";g.fillRect(0,0,PW,34);g.fillStyle="#fff";g.textAlign="right";g.font=F(13,1);g.fillText(title,PW-MG,17);y=56}
+    g.fillStyle="#9CA3AF";g.textAlign="center";g.font=F(11);g.fillText("صفحة "+n,PW/2,PH-18);
+  }
+  np();
+  const wrap=(t,w)=>{const L=[];let cur="";for(const wd of String(t).split(/\s+/)){const tr=cur?cur+" "+wd:wd;if(g.measureText(tr).width>w&&cur){L.push(cur);cur=wd}else cur=tr}L.push(cur);return L};
+  return{
+    title(t,col){
+      if(y>PH-120)np();
+      g.fillStyle=col;g.beginPath();(g.roundRect||g.rect).call(g,MG,y,PW-2*MG,32,8);g.fill();
+      g.fillStyle="#fff";g.textAlign="right";g.font=F(15,1);g.fillText(t,PW-MG-14,y+16);y+=46;
+    },
+    note(t){g.fillStyle="#6B7280";g.textAlign="right";g.font=F(13);g.fillText(t,PW-MG-6,y+10);y+=36},
+    table(cols,ws,rows){
+      const tot=PW-2*MG,sm=ws.reduce((a,b)=>a+b,0),W=ws.map(w=>w/sm*tot);
+      const row=(cells,head,k,tot)=>{
+        g.font=F(12,head||tot);
+        const ls=cells.map((t,i)=>wrap(t,W[i]-10)),h=Math.max(...ls.map(l=>l.length))*16+12;
+        if(y+h>PH-40){np();if(!head)row(cols,true,0);g.font=F(12,head||tot)}
+        let xr=PW-MG;
+        cells.forEach((t,i)=>{
+          const x0=xr-W[i];
+          g.fillStyle=head?"#4338CA":tot?"#FDE68A":k%2?"#EEF2FF":"#fff";g.fillRect(x0,y,W[i],h);
+          g.strokeStyle="#C7D2FE";g.lineWidth=1;g.strokeRect(x0,y,W[i],h);
+          g.save();g.beginPath();g.rect(x0,y,W[i],h);g.clip();
+          g.fillStyle=head?"#fff":"#1E1B4B";g.textAlign="center";g.font=F(12,head||tot);
+          ls[i].forEach((l,j)=>g.fillText(l,x0+W[i]/2,y+14+j*16));
+          g.restore();xr=x0;
+        });
+        y+=h;
+      };
+      row(cols,true,0);rows.forEach((r,k)=>row((r.cells||r).map(String),false,k,!!r.total));y+=22;
+    },
+    done:()=>pages
+  };
+}
+function pdfFromCanvases(cs){
+  const enc=new TextEncoder(),parts=[],offs=[];let len=0;
+  const add=d=>{const b=typeof d==="string"?enc.encode(d):d;parts.push(b);len+=b.length};
+  const obj=(i,d)=>{offs[i]=len;add(`${i} 0 obj\n${d}\nendobj\n`)};
+  const n=cs.length;add("%PDF-1.4\n");
+  obj(1,"<</Type/Catalog/Pages 2 0 R>>");
+  obj(2,`<</Type/Pages/Count ${n}/Kids [${cs.map((_,i)=>`${3+3*i} 0 R`).join(" ")}]>>`);
+  cs.forEach((c,i)=>{
+    const b=atob(c.toDataURL("image/jpeg",0.92).split(",")[1]),jp=Uint8Array.from(b,ch=>ch.charCodeAt(0));
+    obj(3+3*i,`<</Type/Page/Parent 2 0 R/MediaBox [0 0 595.28 841.89]/Resources<</XObject<</Im0 ${5+3*i} 0 R>>>>/Contents ${4+3*i} 0 R>>`);
+    const cm="q 595.28 0 0 841.89 0 0 cm /Im0 Do Q";
+    obj(4+3*i,`<</Length ${cm.length}>>\nstream\n${cm}\nendstream`);
+    offs[5+3*i]=len;add(`${5+3*i} 0 obj\n<</Type/XObject/Subtype/Image/Width ${c.width}/Height ${c.height}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${jp.length}>>\nstream\n`);add(jp);add("\nendstream\nendobj\n");
+  });
+  const tot=2+3*n,xo=len;
+  add(`xref\n0 ${tot+1}\n0000000000 65535 f \n`+offs.slice(1).map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("")+`trailer\n<</Size ${tot+1}/Root 1 0 R>>\nstartxref\n${xo}\n%%EOF`);
+  return new Blob(parts,{type:"application/pdf"});
+}
+const pdfBase=m=>{const d=dmgOf(m.id),st=[m.sample?"عينة":"",d>0?"تالف "+d:""].filter(Boolean).join("، ");return[m.name,m.spec,m.supplier,remOf(m),+(remOf(m)*avgOf(m)).toFixed(3),m.exp,m.qOk||"—",st||"—"]};
+function sharedSection(R,list){
+  R.title(`المواد المشتركة (${list.length})`,"#10B981");
+  if(list.length)R.table(["اسم المادة","المواصفات","المورد","الخطوط","المتبقي (عدد)","الوزن المتبقي","تاريخ الانتهاء","الجودة","الحالة"],[16,19,11,14,9,10,11,8,9],list.map(m=>{const b=pdfBase(m);return[b[0],b[1],b[2],m.places.join(" ، "),b[3],b[4],b[5],b[6],b[7]]}));
+  else R.note("لا توجد مواد مشتركة");
+}
+function lineSection(R,code){
+  const L=LINES.find(l=>l[0]===code),own=invMats().filter(m=>m.places.length===1&&m.places[0]===code);
+  R.title(`${L[1]} — ${code} (${own.length})`,"#F59E0B");
+  if(own.length)R.table(["اسم المادة","المواصفات","المورد","المتبقي (عدد)","الوزن المتبقي","تاريخ الانتهاء","الجودة","الحالة"],[19,23,13,10,11,12,8,10],own.map(pdfBase));
+  else R.note("لا توجد مواد خاصة بهذا الخط");
+}
+function togSkip(id,v){const m=D.mats.find(m=>m.id==id);m.skip=v;save();render();toast(v?"تمت إضافة المادة إلى الأرشيف 🗄":"أُعيدت المادة إلى الجرد ✔")}
+function resetSkip(){
+  if(!D.mats.some(m=>m.skip))return toast("الأرشيف فارغ");
+  if(!confirm("إعادة كل مواد الأرشيف إلى الجرد؟"))return;D.mats.forEach(m=>m.skip=false);save();render();toast("أُعيدت كل المواد إلى الجرد ✔");
+}
+function selLines(){const cs=[...document.querySelectorAll("#lines input")],all=cs.every(c=>c.checked);cs.forEach(c=>c.checked=!all)}
+function startInv(){
+  const codes=[...document.querySelectorAll("#lines input:checked")].map(c=>c.value);
+  if(!codes.length)return toast("حدد خطاً واحداً على الأقل ثم اضغط «ابدأ الجرد»",false);
+  const ls=LINES.filter(l=>codes.includes(l[0])),all=ls.length===LINES.length;
+  const R=Report(ls.length===1?`جرد ${ls[0][1]} — ${ls[0][0]}`:all?"جرد كل الخطوط":"جرد الخطوط المحددة",`الخطوط: ${ls.map(l=>l[0]).join(" ، ")}  |  ${today()}  |  ${fltText()}`);
+  sharedSection(R,invMats().filter(m=>m.places.length>1&&m.places.some(p=>codes.includes(p))));
+  ls.forEach(l=>lineSection(R,l[0]));
+  saveFile(pdfFromCanvases(R.done()),ls.length===1?`جرد_${ls[0][0]}.pdf`:all?"جرد_كل_الخطوط.pdf":"جرد_الخطوط_المحددة.pdf");
+}
+/* ===== مستودع النخب ===== */
+D.stock=D.stock||[];
+const ITEMS=["كلينو أطفال","كلينو عجزة","كلينو نسائية","بربر أطفال","مناديل تور"];
+const GRADES=["نخب ثالث","نخب رابع","حبل","تالف نهائي"];
+const SIZES=[1,2,3,4,5,6];
+const KC=["رقم الإدخال","اسم المادة","تاريخ الإدخال","النخب","القياس","الكمية"];
+const KD=["رقم الإدخال","تاريخ الإدخال","اسم المادة","النخب","القياس","الكمية"];
+const KG=["اسم المادة","النخب","القياس","مجموع الكمية"];
+const KI=["اسم المادة","عدد الإدخالات","مجموع الكمية"];
+const qf=n=>+(+n).toFixed(3);
+const stockTotal=()=>qf(D.stock.reduce((a,e)=>a+e.qty,0));
+const stockSorted=()=>D.stock.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id);
+function stockGroups(){
+  const m=new Map();
+  D.stock.forEach(e=>{const k=e.item+"|"+e.grade+"|"+e.size,g=m.get(k)||{item:e.item,grade:e.grade,size:e.size,qty:0,n:0};g.qty+=e.qty;g.n++;m.set(k,g)});
+  return [...m.values()].sort((a,b)=>ITEMS.indexOf(a.item)-ITEMS.indexOf(b.item)||GRADES.indexOf(a.grade)-GRADES.indexOf(b.grade)||a.size-b.size);
+}
+function stockItems(){
+  const m=new Map();
+  D.stock.forEach(e=>{const g=m.get(e.item)||{item:e.item,qty:0,n:0};g.qty+=e.qty;g.n++;m.set(e.item,g)});
+  return [...m.values()].sort((a,b)=>ITEMS.indexOf(a.item)-ITEMS.indexOf(b.item));
+}
+const stockRows=()=>D.stock.map(e=>[e.id,e.item,e.date,e.grade,e.size,qf(e.qty)]);
+const stockDetRows=()=>stockSorted().map(e=>[e.id,e.date,e.item,e.grade,e.size,qf(e.qty)]).concat(D.stock.length?[{total:true,cells:["","","المجموع الكلي","","",stockTotal()]}]:[]);
+const stockGrpRows=()=>stockGroups().map(g=>[g.item,g.grade,g.size,qf(g.qty)]).concat(D.stock.length?[{total:true,cells:["المجموع الكلي","","",stockTotal()]}]:[]);
+const stockItmRows=()=>stockItems().map(g=>[g.item,g.n,qf(g.qty)]).concat(D.stock.length?[{total:true,cells:["المجموع الكلي",D.stock.length,stockTotal()]}]:[]);
+
+let kEdit=null;
+function renderStock(){
+  if(!$("k_item").children.length){
+    $("k_item").innerHTML=ITEMS.map(x=>`<option>${x}</option>`).join("");
+    $("k_grade").innerHTML=GRADES.map(x=>`<option>${x}</option>`).join("");
+    $("k_size").innerHTML=SIZES.map(x=>`<option>${x}</option>`).join("");
+    $("k_date").value=today();
+  }
+  const rows=D.stock.slice().reverse();
+  $("kt").innerHTML="<tr>"+["رقم الإدخال","اسم المادة","تاريخ الإدخال","النخب","القياس","الكمية",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (rows.length?rows.map(e=>`<tr><td>${e.id}</td><td>${esc(e.item)}</td><td>${esc(e.date)}</td><td>${esc(e.grade)}</td><td>${e.size}</td><td><b>${qf(e.qty)}</b></td><td style="white-space:nowrap"><button class="x" style="background:var(--ind)" onclick="editStock(${e.id})">تعديل</button> <button class="x" onclick="delStock(${e.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="7">لا توجد مواد في المستودع بعد</td></tr>`);
+  $("k_stats").innerHTML=`<span>إجمالي الكميات: <b>${stockTotal()}</b></span><span>عدد المدخلات: <b>${D.stock.length}</b></span><span>عدد البنود المجمّعة: <b>${stockGroups().length}</b></span>`;
+  const gr=stockGrpRows();
+  $("gt").innerHTML="<tr>"+KG.map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (gr.length?gr.map(r=>{const t=!!r.total,c=r.cells||r;return`<tr${t?' style="font-weight:700"':""}>`+c.map(v=>`<td${t?' style="background:#FDE68A!important;color:#1E1B4B"':""}>${esc(v)}</td>`).join("")+"</tr>"}).join(""):`<tr><td class="empty" colspan="4">لا توجد بيانات للجرد</td></tr>`);
+}
+function saveStock(){
+  const item=$("k_item").value,grade=$("k_grade").value,size=+$("k_size").value,date=$("k_date").value,qty=parseFloat($("k_qty").value);
+  if(!date)return toast("أدخل تاريخ الإدخال",false);
+  if(!(qty>0))return toast("الكمية يجب أن تكون أكبر من صفر",false);
+  if(kEdit){Object.assign(D.stock.find(e=>e.id==kEdit),{item,grade,size,date,qty})}
+  else D.stock.push({id:nextNo(D.stock.map(e=>e.id)),item,date,grade,size,qty});
+  const was=kEdit;cancelStock();save();render();toast(was?"تم حفظ التعديل ✔":"تمت الإضافة إلى المستودع ✔");
+}
+function editStock(id){
+  const e=D.stock.find(e=>e.id==id);kEdit=id;
+  $("k_item").value=e.item;$("k_grade").value=e.grade;$("k_size").value=e.size;$("k_date").value=e.date;$("k_qty").value=e.qty;
+  $("k_title").textContent="✏️ تعديل الإدخال رقم "+id;$("k_save").textContent="💾 حفظ التعديل";$("k_cancel").style.display="";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function cancelStock(){
+  kEdit=null;$("k_qty").value="";$("k_date").value=today();
+  $("k_title").textContent="إدخال مادة إلى المستودع";$("k_save").textContent="✔ حفظ";$("k_cancel").style.display="none";
+}
+function delStock(id){if(confirm("حذف الإدخال رقم "+id+"؟")){D.stock=D.stock.filter(e=>e.id!=id);if(kEdit==id)cancelStock();save();render()}}
+function parseStock(sh){
+  const s=sh.find(x=>x.name==="مواد النخب");
+  return s?pick(s.rows,"رقم الإدخال").map(g=>({id:+g("رقم الإدخال"),item:String(g("اسم المادة")).trim(),date:toDate(g("تاريخ الإدخال")),grade:String(g("النخب")).trim(),size:+g("القياس"),qty:+g("الكمية")})).filter(e=>e.id>0&&ITEMS.includes(e.item)&&GRADES.includes(e.grade)&&SIZES.includes(e.size)&&e.qty>0):[];
+}
+function stockPdf(kind){
+  if(!D.stock.length)return toast("لا توجد مواد في المستودع للجرد",false);
+  const sub=`التاريخ: ${today()}  |  عدد المدخلات: ${D.stock.length}  |  إجمالي الكميات: ${stockTotal()}`;
+  if(kind==="det"){
+    const R=Report("جرد مستودع النخب — تفصيلي",sub);
+    R.title("كل المدخلات","#4F46E5");
+    R.table(["#","تاريخ الإدخال","اسم المادة","النخب","القياس","الكمية"],[7,17,26,18,12,15],stockDetRows().map((r,i)=>r.total?r:[i+1,...r.slice(1)]));
+    saveFile(pdfFromCanvases(R.done()),"جرد_النخب_التفصيلي.pdf");
+  }else{
+    const R=Report("جرد مستودع النخب — المجاميع",sub);
+    R.title("الكميات الإجمالية للمواد (حسب النخب والقياس)","#10B981");
+    R.table(KG,[32,24,16,28],stockGrpRows());
+    saveFile(pdfFromCanvases(R.done()),"جرد_النخب_المجاميع.pdf");
+  }
+}
+/* ===== حد أدنى + إشعارات + أرشيف ===== */
+const isLow=m=>m.min>0&&remOf(m)<=m.min;
+function showNotice(t,h,c){$("nd_t").textContent=t;$("nd_t").style.color=c||"var(--ind)";$("nd_b").innerHTML=h;$("nd").showModal()}
+function lowMsg(m){
+  const r=remOf(m);
+  return r<=0?`المادة <b>${esc(m.name)}</b> <b>انتهت</b> (المتبقي 0 والحد الأدنى للطلب ${m.min}).`
+    :`المادة <b>${esc(m.name)}</b> <b>سوف تنتهي قريباً</b>: المتبقي <b>${r}</b> وهو أقل من الحد الأدنى للطلب (<b>${m.min}</b>) أو يساويه.${m.orderType?`<br>نوع الطلب المعتاد: <b>${esc(m.orderType)}</b>`:""}`;
+}
+function lowNotice(m){if(isLow(m))showNotice("⚠️ تنبيه: المادة سوف تنتهي",lowMsg(m),"#B91C1C")}
+function warnOut(m){$("x_warn").innerHTML=m&&isLow(m)?`<div style="background:#FEE2E2;color:#B91C1C;padding:10px 14px;border-radius:10px;font-weight:700">⚠️ ${lowMsg(m)}</div>`:""}
+function renderExtra(){
+  const low=D.mats.filter(m=>!m.skip&&isLow(m));
+  $("lowbar").innerHTML=low.length?`<div class="card" style="border-top-color:var(--red);padding:14px 20px;margin-bottom:14px"><b style="color:var(--red)">⚠️ مواد ستنتهي قريباً (وصلت إلى الحد الأدنى للطلب):</b> ${low.map(m=>`${esc(m.name)} (المتبقي ${remOf(m)} / الحد ${m.min})`).join(" ، ")}</div>`:"";
+  const ar=D.mats.filter(m=>m.skip);
+  $("at").innerHTML="<tr>"+["اسم المادة","العدد","مواصفاتها","اسم المورد","اسم الصانع","تاريخ الإدخال","المتبقي","الوزن المتبقي","الجودة","الحالة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (ar.length?ar.map(m=>{const b=pdfBase(m);return`<tr><td>${esc(m.name)}</td><td>${m.count}</td><td>${esc(m.spec)}</td><td>${esc(m.supplier)}</td><td>${esc(m.maker)}</td><td>${esc(m.date)}</td><td>${remOf(m)}</td><td>${b[4]}</td><td>${esc(m.qOk||"—")}</td><td>${esc(b[7])}</td><td><button class="x" style="background:var(--teal)" onclick="togSkip(${m.id},false)">إعادة إلى الجرد</button></td></tr>`}).join(""):`<tr><td class="empty" colspan="11">الأرشيف فارغ — علِّم مادة بـ ✖ في عمود «تجهيز الجرد» لتنتقل إلى هنا</td></tr>`);
+}
+function archXlsx(){if(!D.mats.some(m=>m.skip))return toast("الأرشيف فارغ",false);exportXlsx("arch")}
+function archivePdf(){
+  const list=D.mats.filter(m=>m.skip);
+  if(!list.length)return toast("الأرشيف فارغ",false);
+  const R=Report("أرشيف المواد الأولية",`التاريخ: ${today()}  |  عدد المواد: ${list.length}`);
+  R.title("المواد المؤرشفة","#7C3AED");
+  R.table(["اسم المادة","المواصفات","المورد","الصانع","تاريخ الإدخال","المتبقي (عدد)","الوزن المتبقي","الجودة","الحالة"],[16,18,11,11,12,8,9,7,9],list.map(m=>{const b=pdfBase(m);return[b[0],b[1],b[2],m.maker,m.date,b[3],b[4],b[6],b[7]]}));
+  saveFile(pdfFromCanvases(R.done()),"أرشيف_المواد.pdf");
+}
+render();
+</script>
+</body>
+</html>
