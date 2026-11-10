@@ -1,0 +1,72 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6
+          npm i -D @capacitor/assets@3
+
+      - name: Create Android project
+        run: |
+          mkdir www
+          cp -r web/* www/
+          npx cap init "Purchases" com.purchases.manager --web-dir=www
+          npx cap add android
+          sed -i 's#<string name="app_name">.*</string>#<string name="app_name">نظام المشتريات</string>#' android/app/src/main/res/values/strings.xml
+          sed -i 's#<string name="title_activity_main">.*</string>#<string name="title_activity_main">نظام المشتريات</string>#' android/app/src/main/res/values/strings.xml
+
+      - name: App icon
+        continue-on-error: true
+        run: npx @capacitor/assets generate --android
+
+      - name: Sync web files
+        run: npx cap sync android
+
+      - name: Use fixed signing key
+        run: |
+          mkdir -p ~/.android
+          cp ci/debug.keystore ~/.android/debug.keystore
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Collect APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk PurchaseManager.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PurchaseManager-apk
+          path: PurchaseManager.apk
+
+      - name: Publish to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest PurchaseManager.apk --title "نظام المشتريات - APK" --notes "أحدث نسخة. حمّل الملف PurchaseManager.apk وثبّته على الجوال."
