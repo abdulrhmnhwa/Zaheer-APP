@@ -67,13 +67,16 @@ textarea{resize:vertical;min-height:60px}
 tr.skipped td{background:#FEE2E2!important;color:#B91C1C;text-decoration:line-through}
 tr.skipped td:first-child{text-decoration:none}
 tr.low td{background:#FEF3C7!important}
+#fab{position:fixed;right:20px;bottom:24px;width:54px;height:54px;border-radius:50%;border:0;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;font-size:24px;cursor:pointer;box-shadow:0 6px 18px #4f46e566;z-index:8;transition:.15s}
+#fab:hover{transform:scale(1.08)}
 @media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.s4{grid-column:span 2}}
 </style>
 </head>
 <body>
 <header>
-  <h1>مؤسسة ظهير الفيصل للمنتجات الصحية</h1>
+  <h1>مؤسسة ظهير الفيصل</h1>
   <div class="stats"><span class="stat" id="st1"></span><span class="stat" id="st2"></span><span class="stat" id="cloud"></span></div>
+  <button class="btn" id="backBtn" style="background:#475569" onclick="goBack()">↩ رجوع</button>
   <input type="file" id="imp" accept=".xlsx" hidden onchange="importXlsx(this)">
   <button class="btn b-teal" onclick="$('imp').click()">📥 استيراد من Excel</button>
   <button class="btn b-ind" style="background:#7C3AED" onclick="openSync()">🔄 المزامنة مع الجوال</button>
@@ -230,6 +233,7 @@ tr.low td{background:#FEF3C7!important}
       <div><label>النخب</label><select id="k_grade"></select></div>
       <div><label>القياس</label><select id="k_size"></select></div>
       <div><label>الكمية</label><input type="number" min="0" step="any" id="k_qty"></div>
+      <div class="s4"><label>ملاحظة المادة</label><textarea id="k_note" style="min-height:70px" placeholder="ملاحظة خاصة بهذه المادة (تُطبع في ملفات Excel وPDF)"></textarea></div>
     </div>
     <div class="bar">
       <button class="btn b-teal" id="k_save" onclick="saveStock()">✔ حفظ</button>
@@ -237,6 +241,9 @@ tr.low td{background:#FEF3C7!important}
       <button class="btn b-org" onclick="exportXlsx('stock')">📊 تصدير إلى Excel</button>
       <button class="btn b-ind" onclick="$('imp').click()">📥 استيراد من Excel</button>
     </div>
+  </div>
+  <div class="card" style="border-top-color:#F59E0B"><h2 style="color:#B45309">📝 ملاحظات (تُطبع مع ملفات Excel وPDF الخاصة بالمستودع)</h2>
+    <textarea id="k_notes" style="min-height:90px" placeholder="اكتب ملاحظاتك هنا..." onchange="saveNotes()"></textarea>
   </div>
   <div class="tw"><table id="kt"></table></div>
 </section>
@@ -293,7 +300,6 @@ tr.low td{background:#FEF3C7!important}
     <div class="s2"><label>اسم المورد</label><input id="m_sup"></div>
     <div class="s2"><label>الشركة الصانعة</label><input id="m_maker"></div>
     <div><label>تاريخ الاستلام</label><input type="date" id="m_recv"></div>
-    <div><label>تاريخ الطلب</label><input type="date" id="m_order"></div>
     <div><label>تاريخ انتهاء المادة (تلقائي)</label><input id="m_expv" readonly placeholder="يُسجَّل عند نفاد الكمية"></div>
     <div><label>متوسط الوزن (تلقائي)</label><input id="m_avg" readonly></div>
     <div><label>الوزن الأدنى للطلب (كغ)</label><input type="number" min="0" step="any" id="m_min"></div>
@@ -329,12 +335,23 @@ tr.low td{background:#FEF3C7!important}
   <div class="bar"><button class="btn b-teal" onclick="saveAdd()">💾 حفظ الإضافة</button><button class="btn b-ind" onclick="$('qd').close()">إغلاق</button></div>
   <div class="tw" style="margin-top:16px"><table id="ad_list"></table></div>
 </dialog>
+<dialog id="sqd" class="big">
+  <h2 id="sa_t">＋ إضافة كمية</h2>
+  <p>أضف كمية جديدة إلى هذه المادة في المستودع. تدخل الكمية في الجرد والمجاميع بتاريخ إضافتها.</p>
+  <div class="grid">
+    <div class="s2"><label>الكمية المضافة</label><input type="number" min="0" step="any" id="sa_qty"></div>
+    <div class="s2"><label>تاريخ الإضافة</label><input type="date" id="sa_date"></div>
+  </div>
+  <div class="bar"><button class="btn b-teal" onclick="saveSAdd()">💾 حفظ الإضافة</button><button class="btn b-ind" onclick="$('sqd').close()">إغلاق</button></div>
+  <div class="tw" style="margin-top:16px"><table id="sa_list"></table></div>
+</dialog>
 <dialog id="rd">
   <h2 style="color:#047857">♻ استعادة نسخة احتياطية</h2>
   <div id="rd_info" style="line-height:2;font-size:15px;margin:10px 0 18px"></div>
   <div class="bar"><button class="btn b-red" onclick="doRestore('replace')">استبدال كل البيانات الحالية</button><button class="btn b-teal" onclick="doRestore('merge')">دمج مع البيانات الحالية</button><button class="btn b-ind" onclick="$('rd').close()">إلغاء</button></div>
 </dialog>
 <dialog id="nd"><h2 id="nd_t"></h2><div id="nd_b" style="line-height:2;font-size:15px;margin:10px 0 18px"></div><div class="bar"><button class="btn b-ind" onclick="$('nd').close()">حسناً</button></div></dialog>
+<button id="fab" onclick="goBack()" title="رجوع خطوة إلى الوراء">↩</button>
 <div id="toast"></div>
 
 <script>
@@ -344,15 +361,23 @@ let D={orders:[],execs:[]};
 try{D=JSON.parse(localStorage.getItem("pm_data"))||D}catch(e){}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const save=()=>{D.updated=Date.now();try{localStorage.setItem("pm_data",JSON.stringify(D))}catch(e){}push()};
+const save=()=>{
+  pushHist({t:"data",s:lastSnap});
+  D.updated=Date.now();lastSnap=JSON.stringify(D);
+  try{localStorage.setItem("pm_data",lastSnap)}catch(e){}
+  push();
+};
 const rem=no=>{const o=D.orders.find(o=>o.no==no);return +(o.qty-D.execs.filter(x=>x.ono==no).reduce((a,x)=>a+x.qty,0)).toFixed(6)};
 const nextNo=a=>Math.max(0,...a)+1;
 
 function toast(msg,ok=true){const t=$("toast");t.textContent=msg;t.style.background=ok?"#10B981":"#EF4444";t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600)}
 document.addEventListener("click",ev=>{
-  const b=ev.target.closest(".tab");if(!b)return;
+  const b=ev.target.closest(".tab");if(!b||b.classList.contains("on"))return;
+  const prev=navState();
   b.parentElement.querySelectorAll(".tab").forEach(t=>{t.classList.remove("on");$(t.dataset.p).classList.remove("on")});
-  b.classList.add("on");$(b.dataset.p).classList.add("on")});
+  b.classList.add("on");$(b.dataset.p).classList.add("on");
+  pushHist({t:"nav",s:prev});
+});
 
 function orderRows(){return D.orders.map(o=>{const r=rem(o.no);return[o.no,o.date,o.name,o.spec,o.qty,o.line,o.unit,+(o.qty-r).toFixed(6),r]})}
 function execRows(){return D.execs.map(x=>[x.pno,x.ono,x.name,x.spec,x.qty,x.supplier,x.price])}
@@ -435,7 +460,7 @@ const STYLES=HDR+`<styleSheet ${NS}>
 <fill><patternFill patternType="solid"><fgColor rgb="FF10B981"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE68A"/></patternFill></fill></fills>
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFC7D2FE"/></left><right style="thin"><color rgb="FFC7D2FE"/></right><top style="thin"><color rgb="FFC7D2FE"/></top><bottom style="thin"><color rgb="FFC7D2FE"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="7">
+<cellXfs count="8">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="2" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
@@ -443,22 +468,31 @@ const STYLES=HDR+`<styleSheet ${NS}>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="3" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="top" wrapText="1"/></xf>
 </cellXfs></styleSheet>`;
 const col=i=>String.fromCharCode(65+i);
 const cell=(r,c,v,s)=>typeof v==="number"?`<c r="${col(c)}${r}" s="${s}"><v>${v}</v></c>`:v===""||v==null?`<c r="${col(c)}${r}" s="${s}"/>`:`<c r="${col(c)}${r}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
 function sheetXml(title,cols,rows,ts){
   const n=cols.length;
-  const w=cols.map((c,j)=>Math.min(45,Math.max(13,...[c,...rows.map(r=>(r.cells||r)[j])].map(v=>String(v).length+6))));
+  const w=cols.map((c,j)=>Math.min(45,Math.max(13,...[c,...rows.filter(r=>r.note===undefined).map(r=>(r.cells||r)[j])].map(v=>String(v).length+6))));
   let x=HDR+`<worksheet ${NS}><sheetViews><sheetView rightToLeft="1" showGridLines="0" workbookViewId="0"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="21"/><cols>`+
     w.map((v,j)=>`<col min="${j+1}" max="${j+1}" width="${v}" customWidth="1"/>`).join("")+`</cols><sheetData>`;
   x+=`<row r="1" ht="36" customHeight="1">`+cols.map((_,j)=>cell(1,j,j?"":title,ts)).join("")+`</row>`;
   x+=`<row r="2" ht="26" customHeight="1">`+cols.map((c,j)=>cell(2,j,c,3)).join("")+`</row>`;
-  rows.forEach((r,i)=>{const t=!!r.total;x+=`<row r="${i+3}">`+(r.cells||r).map((v,j)=>cell(i+3,j,v,t?6:(i%2)?5:4)).join("")+`</row>`});
-  return x+`</sheetData><mergeCells count="1"><mergeCell ref="A1:${col(n-1)}1"/></mergeCells></worksheet>`;
+  let rn=3,di=0;const mg=[`A1:${col(n-1)}1`];
+  rows.forEach(r=>{
+    if(r.note!==undefined){
+      x+=`<row r="${rn}" ht="26" customHeight="1">`+cols.map((_,j)=>cell(rn,j,j?"":"ملاحظات",3)).join("")+`</row>`;mg.push(`A${rn}:${col(n-1)}${rn}`);rn++;
+      const lines=r.note.split("\n").reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/80)),0);
+      x+=`<row r="${rn}" ht="${Math.max(40,lines*20+12)}" customHeight="1">`+cols.map((_,j)=>cell(rn,j,j?"":r.note,7)).join("")+`</row>`;mg.push(`A${rn}:${col(n-1)}${rn}`);rn++;return;
+    }
+    const t=!!r.total;x+=`<row r="${rn}">`+(r.cells||r).map((v,j)=>cell(rn,j,v,t?6:(di%2)?5:4)).join("")+`</row>`;rn++;di++;
+  });
+  return x+`</sheetData><mergeCells count="${mg.length}">`+mg.map(m=>`<mergeCell ref="${m}"/>`).join("")+`</mergeCells></worksheet>`;
 }
 function exportXlsx(kind){
-  const SH={orders:["طلبات الشراء",OC,orderRows(),1],execs:["تنفيذ طلبات الشراء",EC,execRows(),2],mats:["إدخالات المواد",MC,matRows(),1],outs:["إخراجات المواد",OUC,outRows(),2],inv:["جرد المواد",IC,invRows(),1],arch:["أرشيف المواد",MC,matRows(true),2],adds:["إضافات المواد",AC,addRows(),2],addsA:["إضافات المواد",AC,addRows(true),2],sout:["إخراجات النخب",SOC,soutRows(),2],info:["نسخة احتياطية",["البند","القيمة"],infoRows(),1],stock:["مواد النخب",KC,stockRows(),2],sdet:["جرد تفصيلي للنخب",KD,stockDetRows(),1],sgrp:["جرد مجاميع النخب",KG,stockGrpRows(),1]};
-  const sh=kind==="all"?["orders","execs","mats","adds","outs","inv","stock","sout"].map(k=>SH[k]):kind==="backup"?["orders","execs","mats","adds","outs","stock","sout","info"].map(k=>SH[k]):kind==="mats"?[SH.mats,SH.adds]:kind==="arch"?[SH.arch,SH.addsA]:[SH[kind]];
+  const SH={orders:["طلبات الشراء",OC,orderRows(),1],execs:["تنفيذ طلبات الشراء",EC,execRows(),2],mats:["إدخالات المواد",MC,matRows(),1],outs:["إخراجات المواد",OUC,outRows(),2],inv:["جرد المواد",IC,invRows(),1],arch:["أرشيف المواد",MC,matRows(true),2],adds:["إضافات المواد",AC,addRows(),2],addsA:["إضافات المواد",AC,addRows(true),2],sadds:["إضافات النخب",SAC,saddRows(),2],sout:["إخراجات النخب",SOC,soutRows(),2],info:["نسخة احتياطية",["البند","القيمة"],infoRows(),1],stock:["مواد النخب",KC,withNote(stockRows()),2],sdet:["جرد تفصيلي للنخب",KD,withNote(stockDetRows()),1],sgrp:["جرد مجاميع النخب",KG,withNote(stockGrpRows()),1]};
+  const sh=kind==="all"?["orders","execs","mats","adds","outs","inv","stock","sadds","sout"].map(k=>SH[k]):kind==="backup"?["orders","execs","mats","adds","outs","stock","sadds","sout","info"].map(k=>SH[k]):kind==="mats"?[SH.mats,SH.adds]:kind==="stock"?[SH.stock,SH.sadds]:kind==="arch"?[SH.arch,SH.addsA]:[SH[kind]];
   const files=[
     ["[Content_Types].xml",HDR+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`+sh.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")+`</Types>`],
     ["_rels/.rels",HDR+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
@@ -537,7 +571,7 @@ async function pull(){
   if(!S.url||!S.code)return;
   try{
     const res=await fetch(rurl());if(!res.ok)throw 0;const r=await res.json();
-    if(r&&(r.updated||0)>(D.updated||0)){D={orders:r.orders||[],execs:r.execs||[],mats:r.mats||[],outs:r.outs||[],stock:r.stock||[],adds:r.adds||[],sout:r.sout||[],updated:r.updated};try{localStorage.setItem("pm_data",JSON.stringify(D))}catch(e){}render()}
+    if(r&&(r.updated||0)>(D.updated||0)){D={orders:r.orders||[],execs:r.execs||[],mats:r.mats||[],outs:r.outs||[],stock:r.stock||[],adds:r.adds||[],sout:r.sout||[],sadds:r.sadds||[],stockNotes:r.stockNotes||"",updated:r.updated};lastSnap=JSON.stringify(D);hist=hist.filter(h=>h.t==="nav");try{localStorage.setItem("pm_data",JSON.stringify(D))}catch(e){}render()}
     else if(!r||(r.updated||0)<(D.updated||0))return push();
     cloud("☁ متصل")
   }catch(e){cloud("☁ غير متصل",false)}
@@ -585,7 +619,7 @@ const usedOf=id=>D.outs.filter(o=>o.matId==id).reduce((a,o)=>a+o.used,0);
 const remOf=m=>+(totCount(m)-usedOf(m.id)).toFixed(6);
 /* متوسط وزن الرول/الكرتونة = الوزن ÷ العدد */
 const avgOf=m=>totWeight(m)/totCount(m);
-const matRows=arch=>(arch?D.mats.filter(m=>m.skip):D.mats).map(m=>[m.id,m.name,m.count,m.weight,m.spec,m.supplier,m.maker,m.date,m.recv,m.order,expText(m),+avgOf(m).toFixed(4),m.places.join("، "),m.qOk||"",m.qNotes||"",m.qTrial||"",m.sample?"نعم":"",m.skip?"نعم":"",m.min||0,m.orderType||"",usedOf(m.id),remOf(m)]);
+const matRows=arch=>(arch?D.mats.filter(m=>m.skip):D.mats).map(m=>[m.id,m.name,m.count,m.weight,m.spec,m.supplier,m.maker,m.date,m.recv,orderDate(m),expText(m),+avgOf(m).toFixed(4),m.places.join("، "),m.qOk||"",m.qNotes||"",m.qTrial||"",m.sample?"نعم":"",m.skip?"نعم":"",m.min||0,m.orderType||"",usedOf(m.id),remOf(m)]);
 const outRows=()=>D.outs.map(o=>[o.id,o.matId,o.name,o.spec,o.place,o.used,o.weight,o.date,o.damaged?"نعم":""]);
 const FLT_NAMES={ok:"مقبول",bad:"مرفوض",sample:"عينات",dmg:"تالف"};
 const fltSel=()=>[...document.querySelectorAll("#flt input:checked")].map(c=>c.value);
@@ -603,8 +637,8 @@ const invRows=()=>invMats().map(invRowOf);
 
 function renderRaw(){
   const mr=D.mats.slice().reverse();
-  $("mt").innerHTML="<tr>"+["الرقم التسلسلي","اسم المادة","الشركة الصانعة","مواصفاتها","الوزن الكلي (كغ)","العدد (رول/كرتونة/كيس)","اسم المورد","تاريخ الإدخال","نوع الطلب","الوزن الأدنى للطلب","المتبقي","تاريخ الانتهاء","الجودة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
-    (mr.length?mr.map(m=>`<tr class="${isLow(m)?"low":""}"><td><b>${D.mats.indexOf(m)+1}</b></td><td>${esc(m.name)}${m.sample?" 🧪":""}${m.skip?" 🗄":""}${addsOf(m.id).length?" ➕"+addsOf(m.id).length:""}</td><td>${esc(m.maker)}</td><td>${esc(m.spec)}</td><td>${qf(totWeight(m))}</td><td>${totCount(m)}</td><td>${esc(m.supplier)}</td><td>${esc(m.date)}</td><td>${esc(m.orderType||"—")}</td><td>${m.min||"—"}</td><td><b>${remOf(m)}</b>${isLow(m)?" ⚠️":""}</td><td>${esc(expText(m))}</td><td>${esc(m.qOk||"—")}</td><td style="white-space:nowrap"><button class="x" style="background:#0EA5E9" onclick="kashf(${m.id})">كشف</button> <button class="x" style="background:var(--ind)" onclick="openMat(${m.id})">تعديل</button> <button class="x" style="background:var(--teal)" onclick="openAdd(${m.id})">＋ كمية</button> <button class="x" onclick="delMat(${m.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="14">لا توجد مواد مدخلة بعد — اضغط «إضافة بطاقة مادة جديدة»</td></tr>`);
+  $("mt").innerHTML="<tr>"+["الرقم التسلسلي","اسم المادة","الشركة الصانعة","مواصفاتها","الوزن الكلي (كغ)","العدد (رول/كرتونة/كيس)","اسم المورد","تاريخ الاستلام","نوع الطلب","الوزن الأدنى للطلب","تاريخ الطلب","المتبقي","تاريخ الانتهاء","الجودة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (mr.length?mr.map(m=>`<tr class="${isLow(m)?"low":""}"><td><b>${D.mats.indexOf(m)+1}</b></td><td>${esc(m.name)}${m.sample?" 🧪":""}${m.skip?" 🗄":""}${addsOf(m.id).length?" ➕"+addsOf(m.id).length:""}</td><td>${esc(m.maker)}</td><td>${esc(m.spec)}</td><td>${qf(totWeight(m))}</td><td>${totCount(m)}</td><td>${esc(m.supplier)}</td><td>${esc(m.recv||"—")}</td><td>${esc(m.orderType||"—")}</td><td>${m.min||"—"}</td><td>${esc(orderDate(m)||"—")}</td><td><b>${remOf(m)}</b>${isLow(m)?" ⚠️":""}</td><td>${esc(expText(m))}</td><td>${esc(m.qOk||"—")}</td><td style="white-space:nowrap"><button class="x" style="background:#0EA5E9" onclick="kashf(${m.id})">كشف</button> <button class="x" style="background:var(--ind)" onclick="openMat(${m.id})">تعديل</button> <button class="x" style="background:var(--teal)" onclick="openAdd(${m.id})">＋ كمية</button> <button class="x" onclick="delMat(${m.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="15">لا توجد مواد مدخلة بعد — اضغط «إضافة بطاقة مادة جديدة»</td></tr>`);
   const xr=D.outs.slice().reverse();
   $("xt").innerHTML="<tr>"+["رقم الإخراج","المادة","المواصفات","مكان الاستخدام","العدد المستخدم","الوزن الكلي","التاريخ","الحالة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
     (xr.length?xr.map(o=>`<tr${o.damaged?' style="color:#B91C1C"':""}><td>${o.id}</td><td>${esc(o.name)}</td><td>${esc(o.spec)}</td><td>${esc(o.place)}</td><td>${o.used}</td><td>${+o.weight.toFixed(3)}</td><td>${esc(o.date)}</td><td>${o.damaged?"<b>⚠️ تالف</b>":"سليم"}</td><td style="white-space:nowrap"><button class="x" style="background:${o.damaged?"var(--teal)":"var(--org)"}" onclick="togDmg(${o.id})">${o.damaged?"إلغاء التالف":"تحديد تالف"}</button> <button class="x" onclick="delOut(${o.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="9">لا توجد إخراجات بعد</td></tr>`);
@@ -623,7 +657,7 @@ let editId=null;
 function openMat(id){
   editId=id||null;const m=editId?D.mats.find(m=>m.id==editId):null;
   $("md_title").textContent=m?"✏️ تعديل بطاقة المادة":"＋ بطاقة مادة جديدة";
-  const set={m_name:m&&m.name,m_count:m&&m.count,m_weight:m&&m.weight,m_spec:m&&m.spec,m_sup:m&&m.supplier,m_maker:m&&m.maker,m_recv:m?m.recv:today(),m_order:m&&m.order,m_expv:m&&(expText(m)!=="—"?expText(m):""),q_ok:m&&m.qOk,q_notes:m&&m.qNotes,q_trial:m&&m.qTrial,m_min:m&&m.min,m_type:m&&m.orderType};
+  const set={m_name:m&&m.name,m_count:m&&m.count,m_weight:m&&m.weight,m_spec:m&&m.spec,m_sup:m&&m.supplier,m_maker:m&&m.maker,m_recv:m?m.recv:today(),m_expv:m&&(expText(m)!=="—"?expText(m):""),q_ok:m&&m.qOk,q_notes:m&&m.qNotes,q_trial:m&&m.qTrial,m_min:m&&m.min,m_type:m&&m.orderType};
   for(const k in set)$(k).value=set[k]??"";
   $("m_sample").checked=!!(m&&m.sample);
   document.querySelectorAll("#pl input").forEach(c=>c.checked=!!(m&&m.places.includes(c.value)));
@@ -638,12 +672,12 @@ function saveMat(){
   if(!g("m_spec"))return toast("أدخل مواصفات المادة",false);
   if(!g("m_sup"))return toast("أدخل اسم المورد",false);
   if(!g("m_maker"))return toast("أدخل اسم الشركة الصانعة",false);
-  if(!g("m_recv")||!g("m_order"))return toast("أدخل تاريخ الاستلام وتاريخ الطلب",false);
+  if(!g("m_recv"))return toast("أدخل تاريخ الاستلام",false);
   if(!places.length)return toast("اختر مكان استخدام واحداً على الأقل",false);
   const min=parseFloat(g("m_min"));
   if(!(min>=0))return toast("أدخل الوزن الأدنى للطلب بالكيلوغرام (اكتب 0 إن لم يوجد)",false);
   if(!g("m_type"))return toast("اختر نوع الطلب (داخلي أو خارجي)",false);
-  const f={name:g("m_name"),count,weight,spec:g("m_spec"),supplier:g("m_sup"),maker:g("m_maker"),recv:g("m_recv"),order:g("m_order"),places,qOk:g("q_ok"),qNotes:g("q_notes"),qTrial:g("q_trial"),sample:$("m_sample").checked,min,orderType:g("m_type")};
+  const f={name:g("m_name"),count,weight,spec:g("m_spec"),supplier:g("m_sup"),maker:g("m_maker"),recv:g("m_recv"),places,qOk:g("q_ok"),qNotes:g("q_notes"),qTrial:g("q_trial"),sample:$("m_sample").checked,min,orderType:g("m_type")};
   if(editId){
     const m=D.mats.find(m=>m.id==editId);
     if(count+addsOf(m.id).reduce((a,x)=>a+x.count,0)<usedOf(m.id))return toast(`العدد أقل من المستخدم فعلياً (${usedOf(m.id)})`,false);
@@ -679,7 +713,7 @@ function delOut(id){if(confirm("حذف الإخراج؟ سيعود العدد إ
 const gn=(g,...ns)=>{for(const n of ns){const v=g(n);if(v!=="")return v}return ""};
 function parseRaw(sh){
   const sm=sh.find(s=>/إدخالات المواد/.test(s.name)),sa=sh.find(s=>/أرشيف المواد/.test(s.name)),so=sh.find(s=>/إخراجات المواد/.test(s.name)),sd=sh.find(s=>/إضافات المواد/.test(s.name));
-  const mapM=g=>({id:+g("رقم المادة"),name:String(g("اسم المادة")).trim(),count:+gn(g,"العدد (رول/كرتونة/كيس)","العدد"),weight:+gn(g,"الوزن الكلي (كغ)","الوزن"),spec:String(g("مواصفات المادة")),supplier:String(g("اسم المورد")),maker:String(gn(g,"الشركة الصانعة","اسم الصانع")),date:toDate(g("تاريخ الإدخال")),recv:toDate(g("تاريخ الاستلام")),order:toDate(g("تاريخ الطلب")),sample:String(g("عينة")).trim()==="نعم",skip:String(g("مؤرشف")).trim()==="نعم",min:+gn(g,"الوزن الأدنى للطلب (كغ)","الحد الأدنى للطلب")||0,orderType:String(g("نوع الطلب")).trim(),places:String(g("مكان الاستخدام")).split(/[,،]/).map(x=>x.trim()).filter(x=>PLACES.includes(x)),qOk:String(g("استلام الجودة")),qNotes:String(g("ملاحظات الجودة")),qTrial:toDate(g("تاريخ التجربة"))});
+  const mapM=g=>({id:+g("رقم المادة"),name:String(g("اسم المادة")).trim(),count:+gn(g,"العدد (رول/كرتونة/كيس)","العدد"),weight:+gn(g,"الوزن الكلي (كغ)","الوزن"),spec:String(g("مواصفات المادة")),supplier:String(g("اسم المورد")),maker:String(gn(g,"الشركة الصانعة","اسم الصانع")),date:toDate(g("تاريخ الإدخال")),recv:toDate(g("تاريخ الاستلام")),sample:String(g("عينة")).trim()==="نعم",skip:String(g("مؤرشف")).trim()==="نعم",min:+gn(g,"الوزن الأدنى للطلب (كغ)","الحد الأدنى للطلب")||0,orderType:String(g("نوع الطلب")).trim(),places:String(g("مكان الاستخدام")).split(/[,،]/).map(x=>x.trim()).filter(x=>PLACES.includes(x)),qOk:String(g("استلام الجودة")),qNotes:String(g("ملاحظات الجودة")),qTrial:toDate(g("تاريخ التجربة"))});
   const okM=m=>m.id>0&&m.name&&m.count>0&&m.weight>0;
   const mats=sm?pick(sm.rows,"رقم المادة").map(mapM).filter(okM):[];
   if(sa)pick(sa.rows,"رقم المادة").map(mapM).filter(okM).forEach(m=>{const e=mats.find(x=>x.id===m.id);if(e){e.skip=true;e.arch=true}else{m.skip=true;m.arch=true;mats.push(m)}});
@@ -698,7 +732,7 @@ function mergeList(cur,inc,key,idf){
   return{add,map,dup};
 }
 function mergeImport(inc){
-  const R={orders:0,execs:0,mats:0,adds:0,outs:0,stock:0,sout:0,dup:0,skipped:0},omap=new Map(),mmap=new Map();
+  const R={orders:0,execs:0,mats:0,adds:0,outs:0,stock:0,sadds:0,sout:0,dup:0,skipped:0},omap=new Map(),mmap=new Map(),smap=new Map();
   if(inc.orders.length){
     const m=mergeList(D.orders,inc.orders,o=>[o.date,o.name,o.spec,o.qty,o.line,o.unit].join("|"),"no");
     m.map.forEach((v,k)=>omap.set(k,v));D.orders.push(...m.add);R.orders=m.add.length;R.dup+=m.dup;
@@ -711,7 +745,7 @@ function mergeImport(inc){
   }
   if(inc.mats.length){
     const archOld=inc.mats.filter(x=>x.arch).map(x=>x.id);
-    const m=mergeList(D.mats,inc.mats,x=>[x.name,x.count,x.weight,x.spec,x.supplier,x.maker,x.recv,x.order].join("|"),"id");
+    const m=mergeList(D.mats,inc.mats,x=>[x.name,x.count,x.weight,x.spec,x.supplier,x.maker,x.recv].join("|"),"id");
     m.map.forEach((v,k)=>mmap.set(k,v));m.add.forEach(x=>delete x.arch);D.mats.push(...m.add);
     archOld.forEach(id=>{const t=mmap.get(id);if(t)t.skip=true});R.mats=m.add.length;R.dup+=m.dup;
   }
@@ -730,7 +764,12 @@ function mergeImport(inc){
   }
   if(inc.stock.length){
     const m=mergeList(D.stock,inc.stock,e=>[e.item,e.date,e.grade,e.size,e.qty].join("|"),"id");
-    D.stock.push(...m.add);R.stock=m.add.length;R.dup+=m.dup;
+    m.map.forEach((v,k)=>smap.set(k,v));D.stock.push(...m.add);R.stock=m.add.length;R.dup+=m.dup;
+  }
+  if((inc.sadds||[]).length){
+    const ax=[];
+    inc.sadds.forEach(a=>{const e=smap.has(a.stockId)?smap.get(a.stockId):((inc.stock||[]).length?null:D.stock.find(x=>x.id==a.stockId));if(e){a.stockId=e.id;ax.push(a)}else R.skipped++});
+    const m=mergeList(D.sadds,ax,a=>[a.stockId,a.date,a.qty].join("|"),"id");D.sadds.push(...m.add);R.sadds=m.add.length;R.dup+=m.dup;
   }
   if((inc.sout||[]).length){
     const m=mergeList(D.sout,inc.sout,o=>[o.item,o.grade,o.size,o.qty,o.date,o.to].join("|"),"id");
@@ -744,11 +783,12 @@ function parseAll(sh){
   const orders=pick(so.rows,"رقم الطلب").map(g=>({no:+g("رقم الطلب"),date:toDate(g("التاريخ")),name:String(g("اسم المادة")).trim(),spec:String(g("المواصفات")),qty:+g("العدد المطلوب"),line:String(g("اسم الخط")),unit:String(g("اسم الوحدة"))})).filter(o=>o.no>0&&o.name&&o.qty>0);
   const execs=se?pick(se.rows,"رقم الشراء").map(g=>({pno:+g("رقم الشراء"),ono:+g("رقم الطلب"),name:String(g("اسم المادة")),spec:String(g("المواصفات")),qty:+g("العدد المنفذ"),supplier:String(g("المورد")),price:+g("السعر")||0})).filter(x=>x.pno>0&&x.qty>0):[];
   const raw=parseRaw(sh);
-  return{orders,execs,mats:raw.mats,adds:raw.adds,outs:raw.outs,stock:parseStock(sh),sout:parseSout(sh)};
+  const inf=sh.find(s=>s.name==="نسخة احتياطية"),nr=inf?inf.rows.find(r=>r&&r[0]==="ملاحظات مستودع النخب"):null;
+  return{orders,execs,mats:raw.mats,adds:raw.adds,outs:raw.outs,stock:parseStock(sh),sadds:parseSadds(sh),sout:parseSout(sh),notes:nr?String(nr[1]||""):""};
 }
-const allCount=A=>A.orders.length+A.execs.length+A.mats.length+A.adds.length+A.outs.length+A.stock.length+A.sout.length;
+const allCount=A=>A.orders.length+A.execs.length+A.mats.length+A.adds.length+A.outs.length+A.stock.length+A.sadds.length+A.sout.length;
 function importSummary(R,title){
-  const L=[["طلبات الشراء",R.orders],["تنفيذ الطلبات",R.execs],["المواد الأولية",R.mats],["إضافات الكميات",R.adds],["إخراجات المواد الأولية",R.outs],["مستودع النخب",R.stock],["إخراجات النخب",R.sout]].filter(x=>x[1]).map(x=>`✔ ${x[0]}: أُضيف <b>${x[1]}</b>`);
+  const L=[["طلبات الشراء",R.orders],["تنفيذ الطلبات",R.execs],["المواد الأولية",R.mats],["إضافات الكميات",R.adds],["إخراجات المواد الأولية",R.outs],["مستودع النخب",R.stock],["إضافات النخب",R.sadds],["إخراجات النخب",R.sout]].filter(x=>x[1]).map(x=>`✔ ${x[0]}: أُضيف <b>${x[1]}</b>`);
   showNotice(title,(L.join("<br>")||"لا توجد سجلات جديدة")+(R.dup?`<br>↺ سجلات مطابقة تماماً لموجود تم تجاهلها: <b>${R.dup}</b>`:"")+(R.skipped?`<br>⚠ سجلات بلا طلب/مادة مرتبطة تم تجاهلها: <b>${R.skipped}</b>`:"")+`<br><small style="color:#6B7280">قد تتغير أرقام السجلات المستوردة لتتابع أرقامك الحالية.</small>`,"#047857");
 }
 async function importXlsx(inp){
@@ -774,7 +814,7 @@ function doRestore(mode){
   const A=pendingRestore;if(!A)return;$("rd").close();pendingRestore=null;
   if(mode==="replace"){
     A.mats.forEach(m=>delete m.arch);
-    D.orders=A.orders;D.execs=A.execs;D.mats=A.mats;D.adds=A.adds;D.outs=A.outs;D.stock=A.stock;D.sout=A.sout;
+    D.orders=A.orders;D.execs=A.execs;D.mats=A.mats;D.adds=A.adds;D.outs=A.outs;D.stock=A.stock;D.sadds=A.sadds;D.sout=A.sout;D.stockNotes=A.notes||"";
     save();render();toast("تمت استعادة النسخة الاحتياطية ✔");
   }else{const R=mergeImport(A);save();render();importSummary(R,"تم الدمج — بياناتك السابقة كما هي")}
 }
@@ -820,6 +860,18 @@ function Report(title,sub){
         y+=h;
       };
       row(cols,true,0);rows.forEach((r,k)=>row((r.cells||r).map(String),false,k,!!r.total));y+=22;
+    },
+    box(t){
+      const maxW=PW-2*MG-24;g.font=F(13);
+      const lines=[];String(t).split("\n").forEach(pr=>lines.push(...wrap(pr||" ",maxW)));
+      let i=0;
+      while(i<lines.length){
+        const room=Math.floor((PH-40-y-16)/18);if(room<2){np();continue}
+        const ch=lines.slice(i,i+room),h=ch.length*18+16;
+        g.fillStyle="#FFFBEB";g.fillRect(MG,y,PW-2*MG,h);g.strokeStyle="#F59E0B";g.lineWidth=1.5;g.strokeRect(MG,y,PW-2*MG,h);
+        g.fillStyle="#1E1B4B";g.textAlign="right";g.font=F(13);ch.forEach((l,k)=>g.fillText(l,PW-MG-12,y+17+k*18));
+        y+=h+10;i+=ch.length;
+      }
     },
     done:()=>pages
   };
@@ -870,31 +922,34 @@ function startInv(){
   saveFile(pdfFromCanvases(R.done()),ls.length===1?`جرد_${ls[0][0]}.pdf`:all?"جرد_كل_الخطوط.pdf":"جرد_الخطوط_المحددة.pdf");
 }
 /* ===== مستودع النخب ===== */
-D.stock=D.stock||[];D.sout=D.sout||[];
+D.stock=D.stock||[];D.sout=D.sout||[];D.sadds=D.sadds||[];D.stockNotes=D.stockNotes||"";
 const ITEMS=["كلينو أطفال","كلينو عجزة","كلينو نسائية","بربر أطفال","مناديل تور"];
-const GRADES=["نخب ثالث","نخب رابع","حبل","تالف نهائي"];
+const GRADES=["نخب ثالث","نخب رابع","حبل","تالف نهائي","هدر خط"];
 const SIZES=[1,2,3,4,5,6];
-const KC=["رقم الإدخال","اسم المادة","تاريخ الإدخال","النخب","القياس","الكمية"];
-const KD=["رقم الإدخال","تاريخ الإدخال","اسم المادة","النخب","القياس","الكمية"];
+const KC=["رقم الإدخال","اسم المادة","تاريخ الإدخال","النخب","القياس","الكمية","ملاحظة"];
+const KD=["رقم الإدخال","تاريخ الإدخال","اسم المادة","النخب","القياس","الكمية","ملاحظة"];
 const KG=["اسم المادة","النخب","القياس","مجموع الكمية"];
 const KI=["اسم المادة","عدد الإدخالات","مجموع الكمية"];
 const qf=n=>+(+n).toFixed(3);
-const stockTotal=()=>qf(D.stock.reduce((a,e)=>a+e.qty,0));
-const stockSorted=()=>D.stock.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id);
+const saddsOf=id=>D.sadds.filter(a=>a.stockId==id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id);
+const stotOf=e=>qf(e.qty+saddsOf(e.id).reduce((t,a)=>t+a.qty,0));
+const allStock=()=>[...D.stock,...D.sadds.filter(a=>D.stock.some(e=>e.id==a.stockId)).map(a=>{const e=D.stock.find(x=>x.id==a.stockId),n=saddsOf(e.id).findIndex(z=>z.id==a.id)+1;return{id:a.id,lbl:`${e.id} — دفعة ${n}`,item:e.item,grade:e.grade,size:e.size,qty:a.qty,date:a.date,add:true}})];
+const stockTotal=()=>qf(allStock().reduce((a,e)=>a+e.qty,0));
+const stockSorted=()=>allStock().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.add?1:0)-(b.add?1:0)||a.id-b.id);
 function stockGroups(){
   const m=new Map();
-  D.stock.forEach(e=>{const k=e.item+"|"+e.grade+"|"+e.size,g=m.get(k)||{item:e.item,grade:e.grade,size:e.size,qty:0,n:0};g.qty+=e.qty;g.n++;m.set(k,g)});
+  allStock().forEach(e=>{const k=e.item+"|"+e.grade+"|"+e.size,g=m.get(k)||{item:e.item,grade:e.grade,size:e.size,qty:0,n:0};g.qty+=e.qty;g.n++;m.set(k,g)});
   return [...m.values()].sort((a,b)=>ITEMS.indexOf(a.item)-ITEMS.indexOf(b.item)||GRADES.indexOf(a.grade)-GRADES.indexOf(b.grade)||a.size-b.size);
 }
 function stockItems(){
   const m=new Map();
-  D.stock.forEach(e=>{const g=m.get(e.item)||{item:e.item,qty:0,n:0};g.qty+=e.qty;g.n++;m.set(e.item,g)});
+  allStock().forEach(e=>{const g=m.get(e.item)||{item:e.item,qty:0,n:0};g.qty+=e.qty;g.n++;m.set(e.item,g)});
   return [...m.values()].sort((a,b)=>ITEMS.indexOf(a.item)-ITEMS.indexOf(b.item));
 }
-const stockRows=()=>D.stock.map(e=>[e.id,e.item,e.date,e.grade,e.size,qf(e.qty)]);
-const stockDetRows=()=>stockSorted().map(e=>[e.id,e.date,e.item,e.grade,e.size,qf(e.qty)]).concat(D.stock.length?[{total:true,cells:["","","المجموع الكلي","","",stockTotal()]}]:[]);
-const stockGrpRows=()=>stockGroups().map(g=>[g.item,g.grade,g.size,qf(g.qty)]).concat(D.stock.length?[{total:true,cells:["المجموع الكلي","","",stockTotal()]}]:[]);
-const stockItmRows=()=>stockItems().map(g=>[g.item,g.n,qf(g.qty)]).concat(D.stock.length?[{total:true,cells:["المجموع الكلي",D.stock.length,stockTotal()]}]:[]);
+const stockRows=()=>D.stock.map(e=>[e.id,e.item,e.date,e.grade,e.size,qf(e.qty),e.note||""]);
+const stockDetRows=()=>stockSorted().map(e=>[e.lbl||e.id,e.date,e.item,e.grade,e.size,qf(e.qty),e.note||""]).concat(allStock().length?[{total:true,cells:["","","المجموع الكلي","","",stockTotal(),""]}]:[]);
+const stockGrpRows=()=>stockGroups().map(g=>[g.item,g.grade,g.size,qf(g.qty)]).concat(allStock().length?[{total:true,cells:["المجموع الكلي","","",stockTotal()]}]:[]);
+const stockItmRows=()=>stockItems().map(g=>[g.item,g.n,qf(g.qty)]).concat(allStock().length?[{total:true,cells:["المجموع الكلي",allStock().length,stockTotal()]}]:[]);
 
 let kEdit=null;
 function renderStock(){
@@ -905,9 +960,10 @@ function renderStock(){
     $("k_date").value=today();
   }
   const rows=D.stock.slice().reverse();
-  $("kt").innerHTML="<tr>"+["رقم الإدخال","اسم المادة","تاريخ الإدخال","النخب","القياس","الكمية",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
-    (rows.length?rows.map(e=>`<tr><td>${e.id}</td><td>${esc(e.item)}</td><td>${esc(e.date)}</td><td>${esc(e.grade)}</td><td>${e.size}</td><td><b>${qf(e.qty)}</b></td><td style="white-space:nowrap"><button class="x" style="background:var(--ind)" onclick="editStock(${e.id})">تعديل</button> <button class="x" onclick="delStock(${e.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="7">لا توجد مواد في المستودع بعد</td></tr>`);
-  $("k_stats").innerHTML=`<span>إجمالي الكميات: <b>${stockTotal()}</b></span><span>عدد المدخلات: <b>${D.stock.length}</b></span><span>عدد البنود المجمّعة: <b>${stockGroups().length}</b></span>`;
+  if(document.activeElement!==$("k_notes"))$("k_notes").value=D.stockNotes||"";
+  $("kt").innerHTML="<tr>"+["رقم الإدخال","اسم المادة","تاريخ الإدخال","النخب","القياس","الكمية","ملاحظة",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    (rows.length?rows.map(e=>`<tr><td>${e.id}</td><td>${esc(e.item)}${saddsOf(e.id).length?" ➕"+saddsOf(e.id).length:""}</td><td>${esc(e.date)}</td><td>${esc(e.grade)}</td><td>${e.size}</td><td><b>${stotOf(e)}</b></td><td style="max-width:260px;white-space:pre-wrap">${esc(e.note||"—")}</td><td style="white-space:nowrap"><button class="x" style="background:var(--ind)" onclick="editStock(${e.id})">تعديل</button> <button class="x" style="background:var(--teal)" onclick="openSAdd(${e.id})">＋ كمية</button> <button class="x" onclick="delStock(${e.id})">حذف</button></td></tr>`).join(""):`<tr><td class="empty" colspan="8">لا توجد مواد في المستودع بعد</td></tr>`);
+  $("k_stats").innerHTML=`<span>إجمالي الكميات: <b>${stockTotal()}</b></span><span>عدد المدخلات: <b>${allStock().length}</b></span><span>عدد البنود المجمّعة: <b>${stockGroups().length}</b></span>`;
   const gr=stockGrpRows();
   $("gt").innerHTML="<tr>"+KG.map(c=>`<th>${c}</th>`).join("")+"</tr>"+
     (gr.length?gr.map(r=>{const t=!!r.total,c=r.cells||r;return`<tr${t?' style="font-weight:700"':""}>`+c.map(v=>`<td${t?' style="background:#FDE68A!important;color:#1E1B4B"':""}>${esc(v)}</td>`).join("")+"</tr>"}).join(""):`<tr><td class="empty" colspan="4">لا توجد بيانات للجرد</td></tr>`);
@@ -916,38 +972,38 @@ function saveStock(){
   const item=$("k_item").value,grade=$("k_grade").value,size=+$("k_size").value,date=$("k_date").value,qty=parseFloat($("k_qty").value);
   if(!date)return toast("أدخل تاريخ الإدخال",false);
   if(!(qty>0))return toast("الكمية يجب أن تكون أكبر من صفر",false);
-  if(kEdit){Object.assign(D.stock.find(e=>e.id==kEdit),{item,grade,size,date,qty})}
-  else D.stock.push({id:nextNo(D.stock.map(e=>e.id)),item,date,grade,size,qty});
+  if(kEdit){Object.assign(D.stock.find(e=>e.id==kEdit),{item,grade,size,date,qty,note:$("k_note").value.trim()})}
+  else D.stock.push({id:nextNo(D.stock.map(e=>e.id)),item,date,grade,size,qty,note:$("k_note").value.trim()});
   const was=kEdit;cancelStock();save();render();toast(was?"تم حفظ التعديل ✔":"تمت الإضافة إلى المستودع ✔");
 }
 function editStock(id){
   const e=D.stock.find(e=>e.id==id);kEdit=id;
-  $("k_item").value=e.item;$("k_grade").value=e.grade;$("k_size").value=e.size;$("k_date").value=e.date;$("k_qty").value=e.qty;
+  $("k_item").value=e.item;$("k_grade").value=e.grade;$("k_size").value=e.size;$("k_date").value=e.date;$("k_qty").value=e.qty;$("k_note").value=e.note||"";
   $("k_title").textContent="✏️ تعديل الإدخال رقم "+id;$("k_save").textContent="💾 حفظ التعديل";$("k_cancel").style.display="";
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function cancelStock(){
-  kEdit=null;$("k_qty").value="";$("k_date").value=today();
+  kEdit=null;$("k_qty").value="";$("k_note").value="";$("k_date").value=today();
   $("k_title").textContent="إدخال مادة إلى المستودع";$("k_save").textContent="✔ حفظ";$("k_cancel").style.display="none";
 }
-function delStock(id){if(confirm("حذف الإدخال رقم "+id+"؟")){D.stock=D.stock.filter(e=>e.id!=id);if(kEdit==id)cancelStock();save();render()}}
+function delStock(id){if(confirm("حذف الإدخال رقم "+id+" وجميع إضافاته؟")){D.stock=D.stock.filter(e=>e.id!=id);D.sadds=D.sadds.filter(a=>a.stockId!=id);if(kEdit==id)cancelStock();save();render()}}
 function parseStock(sh){
   const s=sh.find(x=>x.name==="مواد النخب");
-  return s?pick(s.rows,"رقم الإدخال").map(g=>({id:+g("رقم الإدخال"),item:String(g("اسم المادة")).trim(),date:toDate(g("تاريخ الإدخال")),grade:String(g("النخب")).trim(),size:+g("القياس"),qty:+g("الكمية")})).filter(e=>e.id>0&&ITEMS.includes(e.item)&&GRADES.includes(e.grade)&&SIZES.includes(e.size)&&e.qty>0):[];
+  return s?pick(s.rows,"رقم الإدخال").map(g=>({id:+g("رقم الإدخال"),item:String(g("اسم المادة")).trim(),date:toDate(g("تاريخ الإدخال")),grade:String(g("النخب")).trim(),size:+g("القياس"),qty:+g("الكمية"),note:String(g("ملاحظة")).trim()})).filter(e=>e.id>0&&ITEMS.includes(e.item)&&GRADES.includes(e.grade)&&SIZES.includes(e.size)&&e.qty>0):[];
 }
 function stockPdf(kind){
-  if(!D.stock.length)return toast("لا توجد مواد في المستودع للجرد",false);
-  const sub=`التاريخ: ${today()}  |  عدد المدخلات: ${D.stock.length}  |  إجمالي الكميات: ${stockTotal()}`;
+  if(!allStock().length)return toast("لا توجد مواد في المستودع للجرد",false);
+  const sub=`التاريخ: ${today()}  |  عدد المدخلات: ${allStock().length}  |  إجمالي الكميات: ${stockTotal()}`;
   if(kind==="det"){
     const R=Report("جرد مستودع النخب — تفصيلي",sub);
     R.title("كل المدخلات","#4F46E5");
-    R.table(["#","تاريخ الإدخال","اسم المادة","النخب","القياس","الكمية"],[7,17,26,18,12,15],stockDetRows().map((r,i)=>r.total?r:[i+1,...r.slice(1)]));
-    saveFile(pdfFromCanvases(R.done()),"جرد_النخب_التفصيلي.pdf");
+    R.table(["#","تاريخ الإدخال","اسم المادة","النخب","القياس","الكمية","ملاحظة"],[6,14,19,14,9,11,27],stockDetRows().map((r,i)=>r.total?r:[i+1,...r.slice(1)]));
+    addNotes(R);saveFile(pdfFromCanvases(R.done()),"جرد_النخب_التفصيلي.pdf");
   }else{
     const R=Report("جرد مستودع النخب — المجاميع",sub);
     R.title("الكميات الإجمالية للمواد (حسب النخب والقياس)","#10B981");
     R.table(KG,[32,24,16,28],stockGrpRows());
-    saveFile(pdfFromCanvases(R.done()),"جرد_النخب_المجاميع.pdf");
+    addNotes(R);saveFile(pdfFromCanvases(R.done()),"جرد_النخب_المجاميع.pdf");
   }
 }
 /* ===== حد أدنى + إشعارات + أرشيف ===== */
@@ -982,7 +1038,7 @@ const addsOf=id=>D.adds.filter(a=>a.matId==id).sort((a,b)=>a.date<b.date?-1:a.da
 const totCount=m=>+(m.count+addsOf(m.id).reduce((a,x)=>a+x.count,0)).toFixed(6);
 const totWeight=m=>+(m.weight+addsOf(m.id).reduce((a,x)=>a+x.weight,0)).toFixed(6);
 const remW=m=>remOf(m)*avgOf(m);
-const batchesOf=m=>[{lbl:"الكمية الأساسية",date:m.date,count:m.count,weight:m.weight},...addsOf(m.id).map((a,i)=>({lbl:"دفعة "+(i+1),date:a.date,count:a.count,weight:a.weight}))];
+const batchesOf=m=>[{lbl:"الكمية الأساسية",date:m.recv||m.date,count:m.count,weight:m.weight},...addsOf(m.id).map((a,i)=>({lbl:"دفعة "+(i+1),date:a.date,count:a.count,weight:a.weight}))];
 function endDates(m){
   const outs=D.outs.filter(o=>o.matId==m.id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id);
   let cum=0;
@@ -1012,7 +1068,7 @@ function renderAdds(){
   const m=D.mats.find(m=>m.id==adMat);if(!m)return;
   const L=addsOf(m.id);
   $("ad_list").innerHTML="<tr>"+["#","تاريخ الإضافة","العدد","الوزن الكلي (كغ)",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
-    `<tr><td>الأساسية</td><td>${esc(m.date)}</td><td>${m.count}</td><td>${qf(m.weight)}</td><td></td></tr>`+
+    `<tr><td>الأساسية</td><td>${esc(m.recv||m.date)}</td><td>${m.count}</td><td>${qf(m.weight)}</td><td></td></tr>`+
     L.map((a,i)=>`<tr><td>دفعة ${i+1}</td><td>${esc(a.date)}</td><td>${a.count}</td><td>${qf(a.weight)}</td><td><button class="x" onclick="delAdd(${a.id})">حذف</button></td></tr>`).join("")+
     `<tr style="font-weight:700"><td>الإجمالي</td><td></td><td>${totCount(m)}</td><td>${qf(totWeight(m))}</td><td></td></tr>`;
 }
@@ -1035,19 +1091,19 @@ function kashf(id){
   R.title("بيانات المادة وجميع إضافاتها","#4F46E5");
   const rows=b.map((x,i)=>[m.name+(i?` (${x.lbl})`:""),m.spec,x.date,e[i]||"—",`${x.count} (${qf(x.weight)} كغ)`]);
   rows.push({total:true,cells:["الإجمالي","","","",`${totCount(m)} (${qf(totWeight(m))} كغ)`]});
-  R.table(["اسم المادة","المواصفات","تاريخ الإدخال","تاريخ الانتهاء","الكمية المدخلة"],[22,28,14,14,22],rows);
+  R.table(["اسم المادة","المواصفات","تاريخ الاستلام","تاريخ الانتهاء","الكمية المدخلة"],[22,28,14,14,22],rows);
   saveFile(pdfFromCanvases(R.done()),`كشف_${m.name.replace(/[\\/:*?"<>|]/g,"_")}.pdf`);
 }
 /* ===== إخراجات مستودع النخب ===== */
 const SOC=["رقم الإخراج","اسم المادة","النخب","القياس","الكمية المخرجة (كغ)","تاريخ الإخراج","الجهة المورد إليها"];
 const sizeTxt=z=>z?z:"بدون تحديد";
 const soutRows=()=>D.sout.map(o=>[o.id,o.item,o.grade,sizeTxt(o.size),qf(o.qty),o.date,o.to||""]);
-const infoRows=()=>[["تاريخ النسخة",new Date().toLocaleString("en-GB")],["طلبات الشراء",D.orders.length],["تنفيذ الطلبات",D.execs.length],["المواد الأولية",D.mats.length],["إضافات الكميات",D.adds.length],["إخراجات المواد الأولية",D.outs.length],["إدخالات النخب",D.stock.length],["إخراجات النخب",D.sout.length]];
+const infoRows=()=>[["تاريخ النسخة",new Date().toLocaleString("en-GB")],["طلبات الشراء",D.orders.length],["تنفيذ الطلبات",D.execs.length],["المواد الأولية",D.mats.length],["إضافات الكميات",D.adds.length],["إخراجات المواد الأولية",D.outs.length],["إدخالات النخب",D.stock.length],["إخراجات النخب",D.sout.length],["إضافات النخب",D.sadds.length],["ملاحظات مستودع النخب",D.stockNotes||""]];
 function stockRem(item,grade,size,ex){
   const sum=a=>a.reduce((t,x)=>t+x.qty,0);
-  const g=sum(D.stock.filter(e=>e.item===item&&e.grade===grade))-sum(D.sout.filter(o=>o.item===item&&o.grade===grade&&o.id!==ex));
+  const g=sum(allStock().filter(e=>e.item===item&&e.grade===grade))-sum(D.sout.filter(o=>o.item===item&&o.grade===grade&&o.id!==ex));
   if(!size)return qf(g);
-  const z=sum(D.stock.filter(e=>e.item===item&&e.grade===grade&&e.size===size))-sum(D.sout.filter(o=>o.item===item&&o.grade===grade&&o.size===size&&o.id!==ex));
+  const z=sum(allStock().filter(e=>e.item===item&&e.grade===grade&&e.size===size))-sum(D.sout.filter(o=>o.item===item&&o.grade===grade&&o.size===size&&o.id!==ex));
   return qf(Math.min(g,z));
 }
 let koEdit=null;
@@ -1097,6 +1153,77 @@ function parseSout(sh){
   const s=sh.find(x=>/إخراجات النخب/.test(x.name));
   return s?pick(s.rows,"رقم الإخراج").map(g=>{const z=String(g("القياس")).trim();return{id:+g("رقم الإخراج"),item:String(g("اسم المادة")).trim(),grade:String(g("النخب")).trim(),size:/بدون/.test(z)?0:+z,qty:+g("الكمية المخرجة (كغ)"),date:toDate(g("تاريخ الإخراج")),to:String(g("الجهة المورد إليها")).trim()}}).filter(o=>o.id>0&&ITEMS.includes(o.item)&&GRADES.includes(o.grade)&&(o.size===0||SIZES.includes(o.size))&&o.qty>0):[];
 }
+/* ===== ملاحظات المستودع + إضافات النخب + تاريخ الطلب التلقائي + الرجوع ===== */
+const withNote=rows=>{const n=($("k_notes")?$("k_notes").value:D.stockNotes||"").trim();return n?rows.concat([{note:n}]):rows};
+function addNotes(R){const n=($("k_notes").value||"").trim();if(n){R.title("ملاحظات","#F59E0B");R.box(n)}}
+function saveNotes(){D.stockNotes=$("k_notes").value;save();toast("تم حفظ الملاحظات ✔")}
+const SAC=["رقم الإضافة","رقم الإدخال","اسم المادة","النخب","القياس","تاريخ الإضافة","الكمية"];
+const saddRows=()=>D.sadds.filter(a=>D.stock.some(e=>e.id==a.stockId)).map(a=>{const e=D.stock.find(x=>x.id==a.stockId);return[a.id,a.stockId,e.item,e.grade,e.size,a.date,qf(a.qty)]});
+function parseSadds(sh){
+  const s=sh.find(x=>/إضافات النخب/.test(x.name));
+  return s?pick(s.rows,"رقم الإضافة").map(g=>({id:+g("رقم الإضافة"),stockId:+g("رقم الإدخال"),date:toDate(g("تاريخ الإضافة")),qty:+g("الكمية")})).filter(a=>a.id>0&&a.stockId>0&&a.qty>0):[];
+}
+let sadMat=null;
+function openSAdd(id){
+  sadMat=id;const e=D.stock.find(e=>e.id==id);
+  $("sa_t").textContent=`＋ إضافة كمية — ${e.item} (${e.grade}${e.size?" / قياس "+e.size:""})`;
+  $("sa_qty").value="";$("sa_date").value=today();renderSAdds();$("sqd").showModal();
+}
+function renderSAdds(){
+  const e=D.stock.find(e=>e.id==sadMat);if(!e)return;
+  $("sa_list").innerHTML="<tr>"+["#","تاريخ الإضافة","الكمية",""].map(c=>`<th>${c}</th>`).join("")+"</tr>"+
+    `<tr><td>الأساسية</td><td>${esc(e.date)}</td><td>${qf(e.qty)}</td><td></td></tr>`+
+    saddsOf(e.id).map((a,i)=>`<tr><td>دفعة ${i+1}</td><td>${esc(a.date)}</td><td>${qf(a.qty)}</td><td><button class="x" onclick="delSAdd(${a.id})">حذف</button></td></tr>`).join("")+
+    `<tr style="font-weight:700"><td>الإجمالي</td><td></td><td>${stotOf(e)}</td><td></td></tr>`;
+}
+function saveSAdd(){
+  const q=parseFloat($("sa_qty").value),d=$("sa_date").value;
+  if(!(q>0))return toast("أدخل الكمية المضافة (أكبر من صفر)",false);
+  if(!d)return toast("أدخل تاريخ الإضافة",false);
+  D.sadds.push({id:nextNo(D.sadds.map(a=>a.id)),stockId:sadMat,date:d,qty:q});
+  $("sa_qty").value="";save();render();renderSAdds();toast("تمت إضافة الكمية ✔");
+}
+function delSAdd(id){
+  const a=D.sadds.find(a=>a.id==id),e=D.stock.find(x=>x.id==a.stockId);
+  if(stockRem(e.item,e.grade,e.size,null)-a.qty<-1e-9)return toast("لا يمكن حذف الإضافة: ستصبح الكمية أقل من المُخرَج",false);
+  if(confirm("حذف هذه الإضافة؟")){D.sadds=D.sadds.filter(x=>x.id!=id);save();render();renderSAdds()}
+}
+/* تاريخ الطلب التلقائي: تاريخ أول إخراج يصل عنده الوزن المتبقي إلى الوزن الأدنى للطلب */
+function orderDate(m){
+  if(!(m.min>0))return "";
+  const outs=D.outs.filter(o=>o.matId==m.id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id),bs=batchesOf(m);
+  let used=0;
+  for(const o of outs){
+    used+=o.used;
+    const inc=bs.filter((b,i)=>i===0||b.date<=o.date),c=inc.reduce((a,b)=>a+b.count,0),w=inc.reduce((a,b)=>a+b.weight,0);
+    if((c-used)*(w/c)<=m.min+1e-9)return o.date;
+  }
+  return "";
+}
+/* ===== زر الرجوع خطوة إلى الوراء (تنقّل + بيانات) ===== */
+let hist=[],lastSnap="";
+const navState=()=>[...document.querySelectorAll(".tabs")].map(t=>{const b=t.querySelector(":scope>.tab.on");return b?b.dataset.p:null});
+function applyNav(a){
+  [...document.querySelectorAll(".tabs")].forEach((t,i)=>{
+    const want=a[i];if(!want)return;
+    t.querySelectorAll(":scope>.tab").forEach(b=>{const on=b.dataset.p===want;b.classList.toggle("on",on);$(b.dataset.p).classList.toggle("on",on)});
+  });
+}
+function updBack(){["backBtn","fab"].forEach(id=>{const e=$(id);if(e)e.style.opacity=hist.length?1:.45})}
+function pushHist(h){hist.push(h);if(hist.length>80)hist.shift();updBack()}
+function goBack(){
+  const h=hist.pop();
+  if(!h){updBack();return toast("لا توجد خطوات للرجوع إليها",false)}
+  if(h.t==="nav"){applyNav(h.s);toast("↩ تم الرجوع إلى الشاشة السابقة")}
+  else{
+    D=JSON.parse(h.s);D.updated=Date.now();lastSnap=JSON.stringify(D);
+    try{localStorage.setItem("pm_data",lastSnap)}catch(e){}
+    cancelStock();cancelKo();push();render();toast("↩ تم التراجع عن آخر تعديل في البيانات");
+  }
+  updBack();
+}
+document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="z"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();goBack()}});
+lastSnap=JSON.stringify(D);updBack();
 render();
 </script>
 </body>
